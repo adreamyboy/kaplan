@@ -1,0 +1,362 @@
+<?php
+if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
+
+require_once('include/Sugarpdf/Sugarpdf.php');
+require_once('modules/Opportunities/sendEmail.php');
+
+class OpportunitiesSugarpdfquote extends Sugarpdf
+{
+    /**
+     * Override
+     */
+    function process(){
+        //$this->preDisplay();
+        $this->display();
+        $this->buildFileName();
+        $this->sendAsEmail();
+    }
+
+    /**
+     * Custom header
+     */
+    public function Header()
+    {
+        $logo = 'custom/themes/default/images/company_logo.png';
+        $bg = 'orange';
+        $opportunity_id = $_REQUEST['record'];
+        $opportunity = new Opportunity();
+        $opportunity->retrieve($opportunity_id);
+        $contact = $opportunity->get_contacts();
+        
+        $html = <<<PDF
+<table border="0">
+	<tr>
+		<td valign="top">
+			<img width="200" src={$logo}></img>
+		</td>
+		<td valign="top">
+			<ul>
+				<li>Invoice Date: {$opportunity->date_entered}</li>
+				<li>Invoice No: {$opportunity->name}</li>
+				<li>Account: {$opportunity->account_name}</li>
+				<li>Contact: {$contact->name}</li>
+				<li>Title: {$contact->title}</li>
+				<li>Country: {$contact->primary_address_country}</li>
+			</ul>
+		</td>
+	</tr>
+</table>
+PDF;
+
+        $this->SetY(10);
+        $this->SetFont(PDF_FONT_NAME_MAIN, 'B', 10);
+		$this->writeHTML($html, true, false, false, false, '');
+    }
+
+    /**
+     * Custom footer
+     */
+    public function Footer()
+    {
+        $pages = '<p>Page ' . $this->getAliasNumPage() . ' of ' . $this->getAliasNbPages() . '</p>';
+        $signature = '<p style="text-align: center;">THIS IS A COMPUTER-GENERATED DOCUMENT AND IT DOES NOT REQUIRE A SIGNATURE.<br />THIS DOCUMENT SHALL NOT BE INVALIDATED SOLELY ON THE GROUND THAT IT IS NOT SIGNED.</p>';
+		$address = '<p style="text-align: center;">Genesis Institute, Office F19, 1st Floor, Block 08, Knowledge Village, Dubai, 501715, United Arab Emirates<br />Tel: +971 4 438 0267, Fax: +971 4 438 0268, Email: <a href="mailto:info@genesisreview.com">info@genesisreview.com</a></p>';
+		
+        $this->SetFont(PDF_FONT_NAME_MAIN, '', 9);
+        $this->SetY(-40);
+		$this->writeHTML($signature, true, false, false, false, '');
+        $this->drawLine();
+		$this->writeHTML($address, true, false, false, false, '');
+		$this->writeHTML($pages, true, false, false, false, '');
+    }
+
+    /**
+     * Predisplay content
+     */
+    function preDisplay()
+    {
+        //Adds a predisplay page
+        $this->AddPage();
+        $this->SetFont(PDF_FONT_NAME_MAIN,'',PDF_FONT_SIZE_MAIN);
+        $this->Ln();
+        $this->MultiCell(0,0,'Predisplay Content',0,'C');
+    }
+
+    /**
+     * Main content
+     */
+    function display()
+    {
+		ob_start();
+		
+        //add a display page
+        $this->AddPage();
+        $this->setPageOrientation('P', true, 45);
+        $this->SetFont(PDF_FONT_NAME_MAIN,'',9);//PDF_FONT_SIZE_MAIN);
+        $this->SetY(50);
+        $this->SetMargins(PDF_MARGIN_LEFT, 50, PDF_MARGIN_RIGHT, 100);
+        
+        $bg = 'orange';
+        $opportunity_id = $_REQUEST['record'];
+        $opportunity = new Opportunity();
+        $opportunity->retrieve($opportunity_id);
+        
+        
+        // Show 'Currency' and 'Line Items'
+        if ($opportunity->status_c == 'Opportunity') {
+            $type = 'PROFORMA INVOICE';
+        } else {
+            $type = 'INVOICE';
+        }
+        
+        $html = <<<PDF
+<h2>{$type}</h2>
+<p>All amounts in {$opportunity->currency_name}</p>
+<h3>Line Items</h3>
+<table border="1" cellspacing="0" cellpadding="3">
+	<tbody>
+		<tr style="background-color: {$bg}">
+			<td width="270"><b>Description</b></td>
+			<td width="30"><b>Qty</b></td>
+			<td width="60"><b>Unit Cost</b></td>
+			<td width="60"><b>Unit Discount</b></td>
+			<td width="60"><b>Discounts</b></td>
+			<td width="60"><b>Totals</b></td>
+		</tr>
+PDF;
+		
+		$collection = $opportunity->get_line_items();
+		
+        foreach ($collection as $item) {
+            $product = current($item->get_products());
+            $contact = current($item->get_contacts());
+            
+            if ($product->price > 0) {
+	            if ($product->type == 'Service') {
+	                $product_details = "<b>{$product->name}</b><br />{$contact->name} ({$product->date_start_c} - {$product->date_end_c})";
+	            } else {
+	                $product_details = "<b>{$product->name}</b>";
+	            }
+	            $product_description = nl2br($product->description);
+	            
+	            $item_unit_price = number_format($item->unit_price, 2, ".", ",");
+	            $item_total_discount = number_format($item->total_discount, 2, ".", ",");
+	            $item_total_price_net = number_format($item->total_price_net, 2, ".", ",");
+            
+$html .= <<<PDF
+		<tr>
+			<td valign="top" width="270">
+				<p>{$product_details}</p>
+				<p>{$product_description}</p>
+			</td>
+			<td align="right" valign="top" width="30">
+				<p>{$item->quantity}</p>
+			</td>
+			<td align="right" valign="top" width="60">
+				<p>{$item_unit_price}</p>
+			</td>
+			<td align="right" valign="top" width="60">
+				<p>{$item->discount_rate}</p>
+			</td>
+			<td align="right" valign="top" width="60">
+				<p>{$item_total_discount}</p>
+			</td>
+			<td align="right" valign="top" width="60">
+				<p>{$item_total_price_net}</p>
+			</td>
+		</tr>
+PDF;
+            }
+        }
+        
+        $opportunity_total_before_discounts = number_format($opportunity->total_before_discounts_c, 2, ".", ",");
+        $opportunity_total_discounts = number_format($opportunity->total_discounts_c, 2, ".", ",");
+        $opportunity_amount = number_format($opportunity->amount, 2, ".", ",");
+        $opportunity_total_payments = number_format($opportunity->total_payments_c, 2, ".", ",");
+        $opportunity_total_creditnote_allocations = number_format($opportunity->total_creditnote_allocations_c, 2, ".", ",");
+        $opportunity_total_refunds = number_format($opportunity->total_refunds_c, 2, ".", ",");
+        $opportunity_total_unpaid = number_format($opportunity->total_unpaid_c, 2, ".", ",");
+        
+$html .= <<<PDF
+		<tr>
+			<td colspan="3" width="420">
+				<p>Total Before Discounts</p>
+			</td>
+			<td colspan="2" align="right" valign="top" width="120">
+				<p>{$opportunity_total_before_discounts}</p>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="3" width="420">
+				<p>Total Discounts</p>
+			</td>
+			<td colspan="2" align="right" valign="top" width="120">
+				<p>{$opportunity_total_discounts}</p>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="3" width="420">
+				<p>Total After Discounts</p>
+			</td>
+			<td colspan="2" align="right" valign="top" width="120">
+				<p><b>{$opportunity_amount}</b></p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+PDF;
+
+        
+        // Show 'Payments'
+        /*
+        $html .= <<<PDF
+<p><b>Invoice Notes:</b> - {$opportunity->invoice_comments_c}</p>
+<p>&nbsp;</p>
+<h3>Payments</h3>
+<table border="1" cellspacing="0" cellpadding="3">
+	<tbody>
+		<tr style="background-color: {$bg}">
+			<td width="100"><b>Type</b></td>
+			<td width="140"><b>Mode</b></td>
+			<td width="100"><b>Amount</b></td>
+			<td width="100"><b>Date Paid</b></td>
+			<td width="100"><b>Date Cleared</b></td>
+		</tr>
+PDF;
+		
+		$collection = $opportunity->get_payments();
+        foreach ($collection as $item) {
+            if ($item->type != 'Installment') {
+                $item_amount = number_format($item->amount, 2, ".", ",");
+                
+$html .= <<<PDF
+		<tr>
+			<td valign="top" width="100">
+				<p>{$item->type}</p>
+			</td>
+			<td align="right" valign="top" width="140">
+				<p>{$item->mode}</p>
+			</td>
+			<td align="right" valign="top" width="100">
+				<p>{$item_amount}</p>
+			</td>
+			<td align="right" valign="top" width="100">
+				<p>{$item->date_paid}</p>
+			</td>
+			<td align="right" valign="top" width="100">
+				<p>{$item->date_cleared}</p>
+			</td>
+		</tr>
+PDF;
+            }
+        }
+$html .= <<<PDF
+		<tr>
+			<td colspan="3" width="340">
+				<p>Total Payments</p>
+			</td>
+			<td colspan="2" align="right" valign="top" width="200">
+				<p>{$opportunity_total_payments}</p>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="3" width="340">
+				<p>Total Credit Note Allocations</p>
+			</td>
+			<td colspan="2" align="right" valign="top" width="200">
+				<p>{$opportunity_total_creditnote_allocations}</p>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="3" width="340">
+				<p>Total Refunds</p>
+			</td>
+			<td colspan="2" align="right" valign="top" width="200">
+				<p>{$opportunity_total_refunds}</p>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="3" width="340">
+				<p>Total Unpaid</p>
+			</td>
+			<td colspan="2" align="right" valign="top" width="200">
+				<p><b>{$opportunity_total_unpaid}</b></p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+PDF;
+		*/
+        
+        // Show 'Payment Terms'
+        
+$html .= <<<PDF
+<p>&nbsp;</p>
+<h3>Payment Terms</h3>
+<p>Payment shall be made within 7 days from Invoice Date.</p>
+<p>Payment should be made in the name of "Genesis Institute FZ LLC"</p>
+<p>Bank Transfer details:</p>
+<ul>
+	<li>Account Name: Genesis Institute FZ LLC</li>
+	<li>Account Number: 101 4481800501</li>
+	<li>IBAN: AE71 0260 0010 1448 1800 501</li>
+	<li>Bank: Emirates NBD - Dubai Media City - Dubai</li>
+	<li>Swift Code: EBILAEAD</li>
+</ul>
+PDF;
+
+		ob_end_clean();
+		
+		$this->writeHTML($html, true, false, false, false, '');
+    }
+
+    /**
+     * This method draw an horizontal line with a specific style.
+     */
+    protected function drawLine()
+    {
+        $this->SetLineStyle(array('width' => 0.85 / $this->getScaleFactor(), 'cap' => 'butt', 'join' => 'miter', 'dash' => 0, 'color' => array(220, 220, 220)));
+        $this->MultiCell(0, 0, '', 'T', 0, 'C');
+    }
+    
+    /**
+     * Build filename
+     */
+    function buildFileName()
+    {
+        $this->fileName = 'invoice-' . date('Y-m-d') . '.pdf';
+    }
+
+    protected function sendAsEmail()
+    {
+        $this->Output($this->fileName, 'I');
+        return true;
+		
+		//ob_clean();
+		
+        $opportunity_id = $_REQUEST['record'];
+        $opportunity = new Opportunity();
+        $opportunity->retrieve($opportunity_id);
+		$collection = $opportunity->get_contacts_list();
+		
+		if (count($collection) > 0) {
+			$contact = current($collection);
+			try
+			{
+				//die('Throwing "die" from.... sugarpdf.quote.php');
+				global $sugar_config;
+				$fp = fopen($sugar_config['upload_dir'] . $this->fileName, 'wb');
+				fclose($fp);
+				$this->Output($sugar_config['upload_dir'].$this->fileName, 'F');
+				sendEmail::send_email($contact, $opportunity, '', $this->fileName, true);
+				
+			} catch(Exception $e) {
+				echo $e;
+			}
+			
+		} else {
+			$this->Output($this->fileName, 'D');
+		}
+	}
+	
+}

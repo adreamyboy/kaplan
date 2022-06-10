@@ -1,0 +1,33 @@
+<?php
+
+$bean = $this->bean;
+
+/*
+$emails = array();
+
+$line_items = $bean->get_line_items();
+
+foreach ($line_items as $line_item) {
+	if (in_array($line_item->status_c, array('Active','Suspended','Complete'))) {
+		$contacts = $line_item->get_contacts();
+		if (count($contacts) > 0) {
+			$delegate = current($contacts);
+			$emails[] = $delegate->email1;
+		}
+	}
+}
+
+$to_email_addrs = implode(',', $emails);
+
+$queryParams = array(
+	'module' => 'Emails',
+	'action' => 'Compose',
+	'to_email_addrs' => $to_email_addrs,
+	'parent_type' => 'GI_Products',
+	'parent_id' => $bean->id,
+	'parent_name' => $bean->name,
+);
+SugarApplication::redirect('index.php?' . http_build_query($queryParams));
+*/
+
+?>

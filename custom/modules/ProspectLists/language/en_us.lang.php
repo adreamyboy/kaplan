@@ -1,0 +1,11 @@
+<?php
+// created: 2016-10-02 22:44:17
+$mod_strings = array (
+  'LBL_PROSPECTS_SUBPANEL_TITLE' => 'Prospects',
+  'LBL_LEADS_SUBPANEL_TITLE' => 'Leads',
+  'LBL_GI_SMS_MESSAGES_PROSPECTLISTS_1_FROM_GI_SMS_MESSAGES_TITLE' => 'SMS Message',
+  'LBL_CONTACTS_SUBPANEL_TITLE' => 'Contacts',
+  'LBL_NAME' => 'Name',
+  'LBL_SYSTEM_PROTECTED' => 'System Protected',
+  'LBL_GI_MOBILE_MESSAGES_PROSPECTLISTS_1_FROM_GI_MOBILE_MESSAGES_TITLE' => 'App Notifications',
+);

@@ -1,0 +1,13 @@
+<?php 
+ //WARNING: The contents of this file are auto-generated
+
+
+//THIS FILE IS AUTO GENERATED, DO NOT MODIFY
+$mod_strings['LBL_GI_REGIONS_GI_COUNTRY_1_FROM_GI_REGIONS_TITLE'] = 'Regions';
+$mod_strings['LBL_GI_COUNTRY_GI_LOCATIONS_1_FROM_GI_LOCATIONS_TITLE'] = 'Locations';
+
+
+//THIS FILE IS AUTO GENERATED, DO NOT MODIFY
+$mod_strings['LBL_GI_REGIONS_GI_COUNTRY_1_FROM_GI_REGIONS_TITLE'] = 'Regions';
+
+?>

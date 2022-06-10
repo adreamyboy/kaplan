@@ -1,0 +1,105 @@
+<?php
+// created: 2015-07-01 03:00:07
+$layout_defs = array (
+  'name' => 
+  array (
+    'vname' => 'LBL_NAME',
+    'widget_class' => 'SubPanelDetailViewLink',
+    'width' => '10%',
+    'default' => true,
+  ),
+  'assigned_user_name' => 
+  array (
+    'link' => true,
+    'type' => 'relate',
+    'vname' => 'LBL_ASSIGNED_TO_NAME',
+    'id' => 'ASSIGNED_USER_ID',
+    'width' => '10%',
+    'default' => true,
+    'widget_class' => 'SubPanelDetailViewLink',
+    'target_module' => 'Users',
+    'target_record_key' => 'assigned_user_id',
+  ),
+  'q1_percentage_c' => 
+  array (
+    'type' => 'decimal',
+    'default' => true,
+    'vname' => 'LBL_Q1_PERCENTAGE',
+    'width' => '10%',
+  ),
+  'q2_percentage_c' => 
+  array (
+    'type' => 'decimal',
+    'default' => true,
+    'vname' => 'LBL_Q2_PERCENTAGE',
+    'width' => '10%',
+  ),
+  'q3_percentage_c' => 
+  array (
+    'type' => 'decimal',
+    'default' => true,
+    'vname' => 'LBL_Q3_PERCENTAGE',
+    'width' => '10%',
+  ),
+  'q4_percentage_c' => 
+  array (
+    'type' => 'decimal',
+    'default' => true,
+    'vname' => 'LBL_Q4_PERCENTAGE',
+    'width' => '10%',
+  ),
+  'q1_amount_c' => 
+  array (
+    'type' => 'currency',
+    'default' => true,
+    'vname' => 'LBL_Q1_AMOUNT',
+    'currency_format' => true,
+    'width' => '10%',
+  ),
+  'q2_amount_c' => 
+  array (
+    'type' => 'currency',
+    'default' => true,
+    'vname' => 'LBL_Q2_AMOUNT',
+    'currency_format' => true,
+    'width' => '10%',
+  ),
+  'q3_amount_c' => 
+  array (
+    'type' => 'currency',
+    'default' => true,
+    'vname' => 'LBL_Q3_AMOUNT',
+    'currency_format' => true,
+    'width' => '10%',
+  ),
+  'q4_amount_c' => 
+  array (
+    'type' => 'currency',
+    'default' => true,
+    'vname' => 'LBL_Q4_AMOUNT',
+    'currency_format' => true,
+    'width' => '10%',
+  ),
+  'date_modified' => 
+  array (
+    'vname' => 'LBL_DATE_MODIFIED',
+    'width' => '10%',
+    'default' => true,
+  ),
+  'edit_button' => 
+  array (
+    'vname' => 'LBL_EDIT_BUTTON',
+    'widget_class' => 'SubPanelEditButton',
+    'module' => 'GI_Target_Allocations',
+    'width' => '4%',
+    'default' => true,
+  ),
+  'remove_button' => 
+  array (
+    'vname' => 'LBL_REMOVE',
+    'widget_class' => 'SubPanelRemoveButton',
+    'module' => 'GI_Target_Allocations',
+    'width' => '5%',
+    'default' => true,
+  ),
+);

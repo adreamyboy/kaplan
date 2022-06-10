@@ -1,0 +1,26 @@
+<?php
+// created: 2017-12-31 01:59:03
+$mod_strings = array (
+  'LBL_OPPORTUNITY' => 'Opportunity / Invoice',
+  'LNK_NEW_MEETING' => 'Schedule Meeting',
+  'LNK_MEETING_LIST' => 'View Meetings',
+  'LNK_IMPORT_MEETINGS' => 'Import Meetings',
+  'LBL_LIST_FORM_TITLE' => 'Meeting List',
+  'LBL_SEARCH_FORM_TITLE' => 'Meeting Search',
+  'LBL_LIST_MY_MEETINGS' => 'My Meetings',
+  'LBL_LIST_JOIN_MEETING' => 'Join Meeting',
+  'LBL_PASSWORD' => 'Meeting Password',
+  'LBL_TYPE' => 'Meeting Type',
+  'LBL_URL' => 'Start/Join Meeting',
+  'LBL_MODULE_NAME' => 'Meetings',
+  'LBL_GI_PRODUCTS_MEETINGS_1_FROM_GI_PRODUCTS_TITLE' => 'Products',
+  'LBL_LEADS' => 'Leads',
+  'LBL_LEADS_SUBPANEL_TITLE' => 'Leads',
+  'LBL_VENUE_STATUS' => 'Venue Status',
+  'LBL_STATUS' => 'Status:',
+  'LBL_SUBJECT' => 'Subject:',
+  'LBL_CONTACTS_SUBPANEL_TITLE' => 'Contacts',
+  'LBL_DATE' => 'Start Date:',
+  'LBL_DATE_END' => 'End Date',
+  'LBL_WEB_HIDDEN' => 'Web Hidden',
+);

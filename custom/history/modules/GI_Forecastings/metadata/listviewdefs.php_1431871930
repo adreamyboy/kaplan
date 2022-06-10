@@ -1,0 +1,60 @@
+<?php
+$module_name = 'GI_Forecastings';
+$listViewDefs [$module_name] = 
+array (
+  'NAME' => 
+  array (
+    'width' => '32%',
+    'label' => 'LBL_NAME',
+    'default' => true,
+    'link' => true,
+  ),
+  'ASSIGNED_USER_NAME' => 
+  array (
+    'width' => '9%',
+    'label' => 'LBL_ASSIGNED_TO_NAME',
+    'module' => 'Employees',
+    'id' => 'ASSIGNED_USER_ID',
+    'default' => true,
+  ),
+  'Q1_C' => 
+  array (
+    'type' => 'currency',
+    'default' => true,
+    'label' => 'LBL_Q1',
+    'currency_format' => true,
+    'width' => '10%',
+  ),
+  'Q2_C' => 
+  array (
+    'type' => 'currency',
+    'default' => true,
+    'label' => 'LBL_Q2',
+    'currency_format' => true,
+    'width' => '10%',
+  ),
+  'Q3_C' => 
+  array (
+    'type' => 'currency',
+    'default' => true,
+    'label' => 'LBL_Q3',
+    'currency_format' => true,
+    'width' => '10%',
+  ),
+  'Q4_C' => 
+  array (
+    'type' => 'currency',
+    'default' => true,
+    'label' => 'LBL_Q4',
+    'currency_format' => true,
+    'width' => '10%',
+  ),
+  'DISCONTINUED_C' => 
+  array (
+    'type' => 'bool',
+    'default' => true,
+    'label' => 'LBL_DISCONTINUED',
+    'width' => '10%',
+  ),
+);
+?>

@@ -1,0 +1,1 @@
+Ext.namespace('K.kreports.googlegeotools');K.kreports.googlegeotools.exportObjectHelper=function(domObject){if(typeof(domObject.children)!=undefined&&domObject.children.length>0){if(domObject.children[0].tagName=='svg')return K.kreports.encode64(domObject.innerHTML);else return K.kreports.googlegeotools.exportObjectHelper(domObject.children[0]);}else return false;}

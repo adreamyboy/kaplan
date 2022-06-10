@@ -1,0 +1,65 @@
+<?php
+if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
+
+require_once('custom/modules/gi_functions_custom.php');
+
+class logic_hooks_Accounts {
+
+    function after_relationship_add_method($bean, $event, $arguments) {
+        $related_module = $arguments['related_module'];
+        $related_id = $arguments['related_id'];
+        $link = $arguments['link'];
+        
+        if ($related_module == "Contacts") {
+	        if ($bean->load_relationship($link)) {
+				$collection = $bean->$link->getBeans();
+				if (count($collection) > 1) {
+					$bean->individual_c = false;
+					$bean->save();
+				}
+	        }
+	    }
+    }
+    
+    function after_relationship_delete_method($bean, $event, $arguments) {
+        $related_module = $arguments['related_module'];
+        $related_id = $arguments['related_id'];
+        $link = $arguments['link'];
+        
+        if ($bean->individual_c && $bean->can_be_deleted()) {
+	        if ($related_module == "Contacts") {
+				$bean->deleted = 1;
+				$bean->save();
+		    }
+		}
+    }
+    
+    function before_delete_method($bean, $event, $arguments){
+        if ($bean->can_be_deleted()) {
+	        $contact = $bean->get_individual_contact();
+	        
+	        if (isset($contact) && !$contact->can_be_deleted()) { // We may need to handle an individual contact
+				$params = array(
+					'module' => 'Contacts',
+					'action' => 'DetailView', 
+					'record' => $contact->id,
+				);
+				$url = 'index.php?' . http_build_query($params);
+				SugarApplication::appendErrorMessage('You can NOT delete this record (<a href="' . $url . '">' . $bean->name . '</a>) because its "Contact" is already related to other records.');
+				SugarApplication::redirect($url);
+	        }
+	        
+	    } else {
+			$params = array(
+				'module' => 'Accounts',
+				'action' => 'DetailView', 
+				'record' => $bean->id,
+			);
+			$url = 'index.php?' . http_build_query($params);
+			SugarApplication::appendErrorMessage('You can NOT delete this record (<a href="' . $url . '">' . $bean->name . '</a>) because it is already related to other records.');
+			SugarApplication::redirect($url);
+	    }
+    }
+    
+}
+?>

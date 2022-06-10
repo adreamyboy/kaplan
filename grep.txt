@@ -1,0 +1,12 @@
+./config_override.php:$sugar_config['sms_sender_id'] = 'KaplanME';
+./config_override.php.bak:$sugar_config['sms_sender_id'] = 'KaplanGen';
+./config.php:  'sms_sender_id' => 'KaplanGen',
+./custom/modules/gi_functions_custom.php.8.vat:        $sms->sender_id_c = $sugar_config['sms_sender_id'];
+./custom/modules/gi_functions_custom.php.8.vat:                            '&from='.rawurlencode($sugar_config['sms_sender_id']).
+./custom/modules/gi_functions_custom.php.8.vat:                    '&from='.rawurlencode($sugar_config['sms_sender_id']).
+./custom/modules/GI_SMS_Messages/send_sms_class.php:                        '&from='.rawurlencode($sugar_config['sms_sender_id']).
+./custom/modules/gi_functions_custom.php:        $sms->sender_id_c = $sugar_config['sms_sender_id'];
+./custom/modules/gi_functions_custom.php:                            '&from='.rawurlencode($sugar_config['sms_sender_id']).
+./custom/modules/gi_functions_custom.php:                    '&from='.rawurlencode($sugar_config['sms_sender_id']).
+./modules/GI_SMS_Messages/sendSMS.php.delete:            ->setOrigin($sugar_config['sms_sender_id'])
+./modules/GI_SMS_Messages/sendSMS.php.delete:                    '&from='.rawurlencode($sugar_config['sms_sender_id']).

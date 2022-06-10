@@ -1,0 +1,83 @@
+<?php
+if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
+
+require_once('custom/modules/gi_functions_custom.php');
+
+class logic_hooks_Opportunities {
+
+    function before_save_method($bean, $event, $arguments) {
+        updateOpportunity($bean);
+    }
+    
+    function after_save_method($bean, $event, $arguments) {
+        $collection = $bean->get_accounts();
+        if (count($collection) > 0) {
+            $account = current($collection);
+	        if ($account->individual_c) {
+	            $collection = $account->get_contacts();
+	            if (count($collection) > 0) {
+	                $contact = current($collection);
+	                // Add a condition to see if the "current" Contact matches the "read" Contact.
+	                $bean->set_opportunity_contact_relationship($contact->id);
+	            }
+	        }
+	    }
+        $collection = $bean->get_line_items();
+        foreach ($collection as $item) {
+			$unit_price = toNumber($item->unit_price);
+			/*
+			if (($item->status_c == 'Active' || $item->status_c == 'Complete' || $item->status_c == 'Suspended') &&
+				($unit_price > 0) &&
+				($bean->status_c == 'Opportunity'))
+			{
+                $item->status_c = 'Interested';
+                $item->save();
+            }
+            */
+			if ($bean->status_c == 'Opportunity') {
+				if ($unit_price > 0) {
+					if ($bean->sales_stage == 'Closed Lost') {
+						$item->status_c = 'Cancelled';
+						$item->save();
+					} else {
+						if ($item->status_c == 'Active' || $item->status_c == 'Complete' || $item->status_c == 'Suspended') {
+							$item->status_c = 'Interested';
+							$item->save();
+						}
+					}
+				}
+			}
+		}
+    }
+    
+    function after_relationship_add_method($bean, $event, $arguments) {
+        $link = $arguments['link'];
+		if ($link == 'opportunities_gi_line_items_1' || $link == 'opportunities_gi_payments_1') {
+			updateOpportunity($bean);
+	        $bean->save();
+	    }
+    }
+    
+    function after_relationship_delete_method($bean, $event, $arguments) {
+        if ($bean->deleted == 0) {
+            updateOpportunity($bean);
+            $bean->save();
+        }
+    }
+    
+    function before_delete_method($bean, $event, $arguments) {
+        if (count($bean->get_line_items()) > 0 || count($bean->get_payments()) > 0) {
+            $bean->deleted = 0;
+			$params = array(
+				'module'=> 'Opportunities',
+				'action'=>'DetailView', 
+				'record' => $bean->id,
+			);
+			$url = 'index.php?' . http_build_query($params);
+			SugarApplication::appendErrorMessage('You can NOT delete this record (<a href="' . $url . '">' . $bean->name . '</a>) because it is already related to other records.');
+			SugarApplication::redirect($url);
+	    }
+    }
+    
+}
+?>

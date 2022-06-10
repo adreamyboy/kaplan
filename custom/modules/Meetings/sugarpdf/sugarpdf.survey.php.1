@@ -1,0 +1,271 @@
+<?php
+ob_end_clean();
+
+if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
+
+require_once('include/Sugarpdf/Sugarpdf.php');
+
+//require_once('modules/Opportunities/sendEmail.php');
+
+class MeetingsSugarpdfsurvey extends Sugarpdf
+{
+    /**
+     * Override
+     */
+    function process(){
+        //$this->preDisplay();
+        $this->display();
+        $this->buildFileName();
+        //$this->sendAsEmail();
+    }
+
+    /**
+     * Custom header
+     */
+    public function Header()
+    {
+        $logo = 'custom/themes/default/images/company_logo.png';
+        $bg = 'orange';
+        $meeting_id = $_REQUEST['record'];
+        $meeting = new Meeting();
+        $meeting->retrieve($meeting_id);
+		$meeting_date_start = date("l, d M Y", strtotime($meeting->date_start));
+        $product_id = $meeting->gi_products_meetings_1gi_products_ida;
+        $product = new GI_Products();
+		//$product->retrieve($product_id);
+        $survey_id = $meeting->meetings_gi_surveys_1gi_surveys_idb;
+        $survey = new GI_Surveys();
+        $survey->retrieve($survey_id);
+		
+        $html = <<<PDF
+<table border="0">
+    <tr>
+        <td valign="top">
+            <img width="200" src={$logo}></img>
+        </td>
+        <td valign="top">
+            <ul>
+                <li>Code: {$product->code}</li>
+                <li>Name: {$product->name}</li>
+                <li>Meeting Date: {$meeting_date_start}</li>
+                <li>Survey: {$survey->name}</li>
+            </ul>
+        </td>
+    </tr>
+</table>
+<h2>{$survey->name}</h2>
+<p>{$survey->header_text_c}</p>
+<!--
+<table border="1" cellspacing="0" cellpadding="4">
+	<tbody>
+		<tr style="background-color: {$bg}">
+			<td width="30"><b>No.</b></td>
+			<td width="250"><b>Question</b></td>
+			<td width="100"><b>(5)</b></td>
+			<td width="100"><b>(4)</b></td>
+			<td width="100"><b>(3)</b></td>
+			<td width="100"><b>(2)</b></td>
+			<td width="100"><b>(1)</b></td>
+		</tr>
+	</tbody>
+</table>
+-->
+PDF;
+
+		$this->SetY(10);
+        $this->SetFont(PDF_FONT_NAME_MAIN, 'B', 10);
+        
+		/*
+		// set style for barcode
+		$style = array(
+			'border' => 2,
+			'vpadding' => 'auto',
+			'hpadding' => 'auto',
+			'fgcolor' => array(0,0,0),
+			'bgcolor' => false, //array(255,255,255)
+			'module_width' => 1, // width of a single module in points
+			'module_height' => 1 // height of a single module in points
+		);
+		
+		// QRCODE,L : QR-CODE Low error correction
+		$this->write2DBarcode('www.tcpdf.org', 'QRCODE,L', 20, 30, 50, 50, $style, 'N');
+		$pdf->Text(20, 25, 'QRCODE L');
+		$this->write2DBarcode('www.tcpdf.org', 'QRCODE,H', 140, 210, 50, 50, $style, 'N');
+		//<img width="200" src="http://www.genesisreview.com/qrcode/view.php?qr={$meeting->name}"></img>
+		*/
+		
+        $this->writeHTML($html, true, false, false, false, '');
+    }
+
+    /**
+     * Custom footer
+     */
+    public function Footer()
+    {
+        $pages = '<p>Page ' . $this->getAliasNumPage() . ' of ' . $this->getAliasNbPages() . '                       (Schedules are tentative and subject to change)</p>';
+        //$signature = '<p style="text-align: center;">THIS IS A COMPUTER-GENERATED DOCUMENT AND IT DOES NOT REQUIRE A SIGNATURE.<br />THIS DOCUMENT SHALL NOT BE INVALIDATED SOLELY ON THE GROUND THAT IT IS NOT SIGNED.</p>';
+        //$address = '<p style="text-align: center;">Genesis Institute, Office F19, 1st Floor, Block 08, Knowledge Village, Dubai, 501715, United Arab Emirates<br />Tel: +971 4 438 0267, Fax: +971 4 438 0268, Email: <a href="mailto:info@genesisreview.com">info@genesisreview.com</a></p>';
+        
+        $this->SetFont(PDF_FONT_NAME_MAIN, '', 9);
+        $this->SetY(-20);
+        //$this->writeHTML($signature, true, false, false, false, '');
+        $this->drawLine();
+        //$this->writeHTML($address, true, false, false, false, '');
+        $this->writeHTML($pages, true, false, false, false, '');
+    }
+
+    /**
+     * Predisplay content
+     */
+    function preDisplay()
+    {
+        //Adds a predisplay page
+        $this->AddPage();
+        $this->SetFont(PDF_FONT_NAME_MAIN,'',PDF_FONT_SIZE_MAIN);
+        $this->Ln();
+        $this->MultiCell(0,0,'Predisplay Content',0,'C');
+    }
+
+    /**
+     * Main content
+     */
+    function display()
+    {
+        //add a display page
+        $this->setPageOrientation('L', true, 25);
+        $this->AddPage();
+        $this->SetFont(PDF_FONT_NAME_MAIN,'',9);//PDF_FONT_SIZE_MAIN);
+        $this->SetY(63);
+        $this->SetMargins(PDF_MARGIN_LEFT, 63, PDF_MARGIN_RIGHT, 25);
+        
+        $bg = 'orange';
+		
+        $meeting_id = $_REQUEST['record'];
+        $meeting = new Meeting();
+        $meeting->retrieve($meeting_id);
+		$meeting_date_start = date("l, d M Y", strtotime($meeting->date_start));
+        
+		$product_id = $meeting->gi_products_meetings_1gi_products_ida;
+        $product = new GI_Products();
+		//$product->retrieve($product_id);
+        
+		$survey_id = $meeting->meetings_gi_surveys_1gi_surveys_idb;
+        $survey = new GI_Surveys();
+        $survey->retrieve($survey_id);
+        
+        // Show 'Questions' list
+        
+        $html = <<<PDF
+<table border="0" cellspacing="0" cellpadding="6">
+	<tbody>
+PDF;
+        $i = 0;
+        $collection = $survey->get_questions();
+        /*
+		echo '<pre>';
+		print_r($collection);
+		echo '</pre>';
+		die();
+		*/
+		
+		usort($collection, array("MeetingsSugarpdfsurvey", "sort_collection_by_question_sequence"));
+		
+        foreach ($collection as $question) {
+            //$duration = $item->duration_hours + ($item->duration_minutes / 60);
+            $i++;
+            
+            //$item_date_start_date = date("l, d M Y", strtotime($item->date_start));
+            //$item_date_start_time = date("H:i", strtotime($item->date_start));
+			
+			switch ($question->type_c) {
+			
+				case "MCQ":
+					$question_option_1_c = ($question->option_1_c != '') ? ('O ' . $question->option_1_c) : '';
+					$question_option_2_c = ($question->option_2_c != '') ? ('O ' . $question->option_2_c) : '';
+					$question_option_3_c = ($question->option_3_c != '') ? ('O ' . $question->option_3_c) : '';
+					$question_option_4_c = ($question->option_4_c != '') ? ('O ' . $question->option_4_c) : '';
+$html .= <<<PDF
+        <tr>
+            <td valign="top" width="30">
+                <p>{$i}</p>
+            </td>
+            <td valign="top" width="250">
+                <p>{$question->description}</p>
+            </td>
+            <td valign="top" width="100">
+                <p>{$question_option_1_c}</p>
+            </td>
+            <td valign="top" width="100">
+                <p>{$question_option_2_c}</p>
+            </td>
+            <td valign="top" width="100">
+                <p>{$question_option_3_c}</p>
+            </td>
+            <td valign="top" width="100">
+                <p>{$question_option_4_c}</p>
+            </td>
+        </tr>
+PDF;
+					break;
+					
+				case "Essay":
+$html .= <<<PDF
+        <tr>
+            <td valign="top" width="30">
+                <p>{$i}</p>
+            </td>
+            <td valign="top" width="650">
+                <p>{$question->description}</p>
+                <p>______________________________________________________________________________________________________________________________</p>
+                <p>______________________________________________________________________________________________________________________________</p>
+                <p>______________________________________________________________________________________________________________________________</p>
+            </td>
+        </tr>
+PDF;
+					break;
+			}
+		}
+
+$html .= <<<PDF
+    </tbody>
+</table>
+PDF;
+        
+        $this->writeHTML($html, true, false, false, false, '');
+    }
+
+    /**
+     * This method draw an horizontal line with a specific style.
+     */
+    protected function drawLine()
+    {
+        $this->SetLineStyle(array('width' => 0.85 / $this->getScaleFactor(), 'cap' => 'butt', 'join' => 'miter', 'dash' => 0, 'color' => array(220, 220, 220)));
+        $this->MultiCell(0, 0, '', 'T', 0, 'C');
+    }
+    
+    /**
+     * Build filename
+     */
+    function buildFileName()
+    {
+       $product_id = $_REQUEST['record'];
+       $product = new GI_Products();
+       $product->retrieve($product_id);
+       //$this->fileName = 'schedule-' . $product->code . '-' date('Y-m-d') . '.pdf';
+       $this->fileName = 'schedule-' . $product->code . '.pdf';
+    }
+
+    protected function sendAsEmail()
+    {
+        $this->Output($this->fileName, 'I');
+        return true;
+    }
+    
+    static function sort_collection_by_question_sequence($a, $b) {
+        $name_a = $a->sequence_c;
+        $name_b = $b->sequence_c;
+        //return strcmp($name_a, $name_b);
+		//return (strtotime($name_a) < strtotime($name_b)) ? -1 : 1;
+		return ($name_a < $name_b) ? -1 : 1;
+    }
+}

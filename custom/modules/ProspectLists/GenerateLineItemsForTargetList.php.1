@@ -1,0 +1,125 @@
+<?php
+
+$bean = $this->bean;
+
+// If "Not Admin", don't allow this action
+global $current_user;
+$isAdmin = is_admin($current_user);
+if (!$isAdmin) {
+	$params = array(
+		'module'=> 'ProspectLists',
+		'action'=>'DetailView', 
+		'record' => $bean->id,
+	);
+	$url = 'index.php?' . http_build_query($params);
+	SugarApplication::appendErrorMessage('You can NOT create line items for this target lists because you do NOT have Admin permissions.');
+	SugarApplication::redirect($url);
+}
+
+if ($_REQUEST['product_ids'] != '') {
+
+	// Check if product IDs are valid
+	$product_ids = explode(',', $_REQUEST['product_ids']);
+	$products = array();
+	$valid_product_ids = true;
+	foreach ($product_ids as $product_id) {
+		$product = new GI_Products();
+		$product->retrieve($product_id);
+		if ($product->id == '') {
+			$valid_product_ids = false;
+			echo "<p>Invalid product ID: {$product_id}</p>";
+		} else {
+			$products[$product->id] = $product;
+			echo "<p>ID: {$product->id} ---- Name: {$product->name}</p>";
+		}
+	}
+	
+	// Check if Assignee IDs is valid
+	$assignee_username = $_REQUEST['assignee_username'];
+	$valid_assignee = true;
+	if ($assignee_username != '') {
+		$user = new User();
+		$user->retrieve_by_string_fields(array('user_name'=>$assignee_username));
+		//$user->retrieve($assignee_id);
+		if (empty($user->id)) {
+			$valid_assignee = false;
+			echo "<p>Invalid Assignee Username: {$assignee_username}</p>";
+		}
+	} else {
+		$valid_assignee = false;
+		echo "<p>Invalid Assignee Username: {$assignee_username}</p>";
+	}
+	
+	// If all products are valid, and the assignee exists, create the new line items
+	if ($valid_assignee && $valid_product_ids) {
+		$link = 'contacts';
+		if ($bean->load_relationship($link)) {
+			$collection = $bean->$link->getBeans();
+			foreach ($collection as $contact) {
+				
+				// Create a new opportunity
+				$individual_account = $contact->get_individual_account();
+				$opportunity = new Opportunity();
+				$opportunity->account_id = $individual_account->id;
+				$opportunity->campaign_id = 'd71b54df-d4e7-dd3d-6f24-5422851d2d3a'; // this ID refers to "Old Lead" campaign
+				$opportunity->assigned_user_id = $user->id;
+				$opportunity->save();
+				$opportunity->retrieve($opportunity->id);
+				$opportunity->save();
+				
+				// Create a new Note under this opportunity
+				$note = new Note();
+				$note->name = "Opportunity and line items created by mass-upload.";
+				$note->parent_type = 'Opportunities';
+				$note->parent_id = $opportunity->id;
+				$note->parent_name = $opportunity->name;
+				$note->contact_id = $contact->id;
+				$note->contact_name = $contact->name;
+				$note->description = "Opportunity and its line items were created by a mass-upload action.";
+				$note->save();
+				
+				// Create new line items under this opportunity
+				foreach ($products as $product) {
+					$line_item = new GI_Line_Items();
+					$line_item->opportunities_gi_line_items_1opportunities_ida = $opportunity->id;
+					$line_item->gi_products_gi_line_items_1gi_products_ida = $product->id;
+					$line_item->contacts_gi_line_items_1contacts_ida = $contact->id;
+					$line_item->unit_price = $product->price;
+					$line_item->save();
+					$params = array(
+						'module'=> 'GI_Line_Items',
+						'action'=>'DetailView', 
+						'record' => $line_item->id,
+					);
+					$url = 'index.php?' . http_build_query($params);
+					echo "<p><a href='{$url}'>{$line_item->name}</a></p>";
+				}
+			}
+		}
+		echo '<p>Done! There are ' . count($collection) . ' contact(s) in this target list.</p>';
+	}
+}
+
+$params = array(
+	'module'=> 'ProspectLists',
+	'action'=>'DetailView', 
+	'record' => $bean->id,
+);
+$return_url = 'index.php?' . http_build_query($params);
+
+?>
+
+<form method="GET">
+	<input type="hidden" name="module" value="<?=$_REQUEST['module']?>" />
+	<input type="hidden" name="record" value="<?=$_REQUEST['record']?>" />
+	<input type="hidden" name="action" value="GenerateLineItemsForTargetList" />
+	<table>
+		<tr><td colspan="2"><h2>You are about to create new line item for the contacts in Target List: <?=$bean->name?> (<?=$_REQUEST['record']?>)</h2></td></tr>
+		<tr><td colspan="2"><h3>NOTE 1: All line items will be created under completely <u>new opportunities</u>.</h3></td></tr>
+		<tr><td colspan="2"><h3>NOTE 2: The new opportunities will be linked to the contacts' <u>individual accounts</u>.</h3></td></tr>
+		<tr><td colspan="2"><h3>NOTE 3: This action will <u>NOT check</u> if other similar line items already exist for the selected contacts.</h3></td></tr>
+		<tr><td>Enter the IDs of products which you want to create line items for [comma-separated]:</td><td><input type="text" id="product_ids" name="product_ids" value="<?=$_REQUEST['product_ids']?>"></td></tr>
+		<tr><td>Enter the ID of the assigned user:</td><td><input type="text" id="assignee_username" name="assignee_username" value="<?=$_REQUEST['assignee_username']?>"></td></tr>
+		<tr><td colspan="2"><a href="<?=$return_url?>">Return to Target List</a> <input type="submit" value="Create Now!"></td></tr>
+	</table>
+</form>

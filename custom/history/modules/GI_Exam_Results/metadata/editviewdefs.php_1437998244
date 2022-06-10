@@ -1,0 +1,91 @@
+<?php
+
+require_once("include/SugarTinyMCE.php");
+$tiny = new SugarTinyMCE();
+$tiny->defaultConfig['cleanup_on_startup']=true;
+$tinyHtml = $tiny->getInstance('message_passed_c,message_failed_c,message_did_not_appear_c');
+
+$module_name = 'GI_Exam_Results';
+$viewdefs [$module_name] = 
+array (
+  'EditView' => 
+  array (
+    'templateMeta' => 
+    array (
+      'maxColumns' => '2',
+      'widths' => 
+      array (
+        0 => 
+        array (
+          'label' => '10',
+          'field' => '30',
+        ),
+        1 => 
+        array (
+          'label' => '10',
+          'field' => '30',
+        ),
+      ),
+      'useTabs' => false,
+      'tabDefs' => 
+      array (
+        'DEFAULT' => 
+        array (
+          'newTab' => false,
+          'panelDefault' => 'expanded',
+        ),
+      ),
+    ),
+    'panels' => 
+    array (
+      'default' => 
+      array (
+        0 => 
+        array (
+          0 => 'name',
+          1 => 
+          array (
+            'name' => 'discontinued_c',
+            'label' => 'LBL_DISCONTINUED',
+          ),
+        ),
+        1 => 
+        array (
+          0 => 'description',
+          1 => 'assigned_user_name',
+        ),
+        2 => 
+        array (
+          0 => 
+          array (
+            'name' => 'message_passed_c',
+            'studio' => 'visible',
+            'label' => 'LBL_MESSAGE_PASSED',
+            'customCode' => '<textarea id="message_passed_c" name="message_passed_c">{$fields.message_passed_c.value}</textarea>{literal}'. $tinyHtml . '{/literal}',
+          ),
+        ),
+        3 => 
+        array (
+          0 => 
+          array (
+            'name' => 'message_failed_c',
+            'studio' => 'visible',
+            'label' => 'LBL_MESSAGE_FAILED',
+            'customCode' => '<textarea id="message_failed_c" name="message_failed_c">{$fields.message_failed_c.value}</textarea>',
+          ),
+        ),
+        4 => 
+        array (
+          0 => 
+          array (
+            'name' => 'message_did_not_appear_c',
+            'studio' => 'visible',
+            'label' => 'LBL_MESSAGE_DID_NOT_APPEAR',
+            'customCode' => '<textarea id="message_did_not_appear_c" name="message_did_not_appear_c">{$fields.message_did_not_appear_c.value}</textarea>',
+          ),
+        ),
+      ),
+    ),
+  ),
+);
+?>

@@ -1,0 +1,117 @@
+<?php
+
+$bean = $this->bean;
+
+/*
+echo '<pre>';
+print_r($bean);
+echo '</pre>';
+*/
+//die('sss');
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Include the Composer autoloader or use your own PSR-0 autoloader
+require 'smsglobal/vendor/autoload.php';
+
+use Smsglobal\RestApiClient\ApiKey;
+use Smsglobal\RestApiClient\RestApiClient;
+use Smsglobal\RestApiClient\Resource\Sms;
+
+// Get an API key from SMSGlobal and insert the key and secret
+$apiKey = new ApiKey('adb6211b2fa5dd33b7a7e637fa8a17a4', '0698ad6f6c1ce52146c9c7fd8991c7c6');
+
+// All requests are done via a 'REST API client.' This abstracts away the REST
+// API so you can deal with it like you would an ORM
+$rest = new RestApiClient($apiKey);
+
+$sms = new Sms();
+$sms->setDestination('971507728838')
+    ->setOrigin('KaplanME')
+    ->setMessage('Hello World.  Testing REST API now.');
+// And save them
+$rest->save($sms);
+
+die('test...');
+
+
+global $sugar_config;
+
+$contacts = $bean->get_contacts();
+
+/********** APPROACH 1: 1 "Note" is stored per Contact **********/
+$sent_numbers = array();
+
+echo 'done1--';
+foreach ($contacts as $contact) {
+    
+    if (!in_array($contact->phone_mobile, $sent_numbers)) {
+    
+        // You can also instantiate new resources
+        echo 'done1a--';
+        $sms = new Sms();
+        $sms->setDestination($contact->phone_mobile)
+            ->setOrigin($sugar_config['sms_sender_id'])
+            ->setMessage('Hello World.  Testing REST API now.');
+            //->setMessage($bean->description);
+        echo 'done1b--';
+        
+        // And save them
+        $rest->save($sms);
+        
+        echo '<pre>';
+        print_r($apiKey);
+        print_r($rest);
+        print_r($sms);
+        echo '</pre>';
+        
+        echo 'done1c--';
+        // When a new object is saved, the ID gets populated (it was null before)
+        //echo $sms->getId(); // integer
+        
+        /*
+        $content =  'action=sendsms'.
+                    '&user='.rawurlencode($sugar_config['sms_username']).
+                    '&password='.rawurlencode($sugar_config['sms_password']).
+                    '&to='.rawurlencode($contact->phone_mobile).
+                    '&from='.rawurlencode($sugar_config['sms_sender_id']).
+                    '&maxsplit=3'.
+                    //'&scheduledatetime='.rawurlencode($scheduledatetime).
+                    '&text='.rawurlencode($sms->description);
+        
+        //die($content);
+        $smsglobal_response = file_get_contents($sugar_config['sms_gateway_url']."".$content);
+        */
+        
+        $sent_numbers[] = $contact->phone_mobile;
+        
+        //Sample Response
+        //OK: 0; Sent queued message ID: 04b4a8d4a5a02176 SMSGlobalMsgID:6613115713715266 
+        
+        /*
+        $explode_response = explode('SMSGlobalMsgID:', $smsglobal_response);
+        if(count($explode_response) == 2) { // Message Success
+            $status = 'Sent';
+        } else { //Message Failed
+            $status = 'Failed';
+        }
+        */
+        
+        /*
+        // Save a note for each contact.
+        $note = new Note();
+        $note->name = "SMS Message";
+        $note->parent_type = 'GI_SMS_Messages';
+        $note->parent_id = $sms->id;
+        $note->parent_name = $sms->name;
+        $note->contact_id = $contact->id;
+        $note->contact_name = $contact->name;
+        $note->description = "SMS to {$contact->phone_mobile} - {$contact->name} \n\n{$smsglobal_response} \n\n{$sms->description}";
+        $note->save();
+        */
+    }
+}
+echo 'done2--';
+
+?>

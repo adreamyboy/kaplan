@@ -1,0 +1,20 @@
+<?php
+if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
+
+require_once('custom/modules/gi_functions_custom.php');
+
+class logic_hooks_Meetings {
+
+    function after_save_method($bean, $event, $arguments) {
+		$ida = 'gi_products_meetings_1gi_products_ida';
+		$product_id = $bean->rel_fields_before_value[$ida];
+		
+		if ($product_id != '') {
+	        $product = new GI_Products();
+	        $product->retrieve($product_id);
+	        $product->save();
+		}
+    }
+
+}
+?>

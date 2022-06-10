@@ -1,0 +1,94 @@
+<?php
+$plugins['grouped'] = array(
+    'id' => 'grouped', 
+    'type' => 'presentation', 
+    'directory' => 'groupedview'
+); 
+$plugins['standard'] = array(
+    'id' => 'standard', 
+    'type' => 'presentation', 
+    'directory' => 'standardview'
+); 
+$plugins['edit'] = array(
+    'id' => 'edit', 
+    'type' => 'presentation', 
+    'directory' => 'editview'
+); 
+$plugins['standardws'] = array(
+    'id' => 'standardws', 
+    'type' => 'presentation', 
+    'directory' => 'standardwsummary'
+); 
+$plugins['standardwp'] = array(
+    'id' => 'standardwp', 
+    'type' => 'presentation', 
+    'directory' => 'standardwpreview'
+); 
+$plugins['tree'] = array(
+    'id' => 'tree', 
+    'type' => 'presentation', 
+    'directory' => 'treeview'
+); 
+
+$plugins['pivot'] = array(
+    'id' => 'pivot', 
+    'type' => 'presentation', 
+    'directory' => 'pivot'
+); 
+$plugins['fusioncharts'] = array(
+    'id' => 'fusioncharts', 
+    'type' => 'visualization', 
+    'directory' => 'fusioncharts'
+);
+$plugins['googlecharts'] = array(
+    'id' => 'googlecharts', 
+    'type' => 'visualization', 
+    'directory' => 'googlecharts'
+);
+
+$plugins['googlegeo'] = array(
+    'id' => 'googlegeo', 
+    'type' => 'visualization', 
+    'directory' => 'googlegeo'
+);
+ 
+$plugins['googlemaps'] = array(
+    'id' => 'googlemaps', 
+    'type' => 'visualization', 
+    'directory' => 'googlemaps'
+);
+$plugins['ktargetlistexport'] = array(
+    'id' => 'ktargetlistexport', 
+    'type' => 'integration', 
+    'directory' => 'ktargetlistexport'
+);
+$plugins['kpublishing'] = array(
+    'id' => 'kpublishing', 
+    'type' => 'integration', 
+    'directory' => 'kpublishing'
+);
+$plugins['kscheduling'] = array(
+    'id' => 'kscheduling', 
+    'type' => 'integration', 
+    'directory' => 'kscheduling'
+);
+$plugins['kexcelexport'] = array(
+    'id' => 'kexcelexport', 
+    'type' => 'integration', 
+    'directory' => 'kexcelexport'
+);
+$plugins['kpdfexport'] = array(
+    'id' => 'kpdfexport', 
+    'type' => 'integration', 
+    'directory' => 'kpdfexport'
+);
+$plugins['kqueryanalizer'] = array(
+    'id' => 'kqueryanalizer', 
+    'type' => 'integration', 
+    'directory' => 'kqueryanalizer'
+);
+$plugins['kpdrilldown'] = array(
+    'id' => 'kpdrilldown', 
+    'type' => 'integration', 
+    'directory' => 'kpdrilldown'
+); 

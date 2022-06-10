@@ -1,0 +1,105 @@
+<?php
+
+$lead = $this->bean;
+$email = $lead->email1;
+
+$opportunity = new Opportunity();
+$opportunity->retrieve($lead->opportunity_id);
+
+if ($opportunity->id != '' && $lead->email1 != '' && $lead->contact_id == '') {
+	
+	$email_add = new EmailAddress();
+	$collection = $email_add->getBeansByEmailAddress($email);
+	
+	$no_of_contacts = 0;
+	foreach ($collection as $record) {
+		if ($record->id != '' && $record->module_dir == 'Contacts') {
+			$no_of_contacts = $no_of_contacts + 1;
+			if ($no_of_contacts == 1) {
+				$contact_id = $record->id;
+			}
+		}
+	}
+	
+	$contact = new Contact();
+	if ($contact_id != '') {
+		$contact->retrieve($contact_id);
+		if ($contact->username_c == '' || $contact->password_c == '') {
+			$contact->generate_new_password_c = 1;
+		}
+		$contact->send_login_immediately_c = 1;
+	} else {
+		$contact->lead_source = $lead->lead_source;
+		$contact->campaign_id = $lead->campaign_id;
+		$contact->generate_new_password_c = 1;
+		$contact->send_login_immediately_c = 1;
+	}
+	
+	$fields = array(
+		'primary_address_country',
+		'primary_address_city',
+		'primary_address_street',
+		'primary_address_street_2',
+		'primary_address_street_3',
+		'primary_address_postalcode',
+		'first_name',
+		'last_name',
+		'title',
+		'email1',
+		'phone_mobile',
+	);
+	
+	foreach ($fields as $field) {
+		if (trim($lead->$field) != '') {
+			$contact->$field = $lead->$field;
+		}
+	}
+	
+	$contact->save();
+	$account = $contact->get_individual_account();
+	
+	// create the corporate account (if needed)
+	// BUG: This will not check if the account already exists.
+	/*
+	if ($lead->account_id == '' && $lead->account_name != '') {
+		$account_corporate = new Account();
+		$account->name = $lead->account_name;
+		$account->individual_c = 0;
+		$account->save();
+	}
+	*/
+
+	// link the opportunity to the right contact & account
+	$opportunity->contact_id = $contact->id;
+	$opportunity->account_id = $account->id;
+	$opportunity->lead_source = $lead->lead_source;
+	$opportunity->lead_source_details_c = $lead->lead_source_description;
+	$opportunity->campaign_id = $lead->campaign_id;
+	$opportunity->save();
+	
+	// update the lineitems' contacts
+	$line_items = $opportunity->get_line_items();
+	foreach ($line_items as $line_item) {
+		$line_item->save();
+	}
+	
+	// link the lead to the right contact & account
+	$lead->contact_id = $contact->id;
+	$lead->account_id = $account->id;
+	$lead->status = 'Converted';
+	$lead->save();
+	
+	SugarApplication::appendErrorMessage('This lead was successfully auto-converted.');
+	
+} else {
+	SugarApplication::appendErrorMessage('This lead seems to be either invalid or already processed. Make sure that this lead: (1) has an Email Address, (2) is not already linked to a Contact, and (3) is already linked to an Opportunity.');
+}
+
+$queryParams = array(
+	'module' => 'Leads',
+	'action' => 'DetailView',
+	'record' => $lead->id,
+);
+SugarApplication::redirect('index.php?' . http_build_query($queryParams));
+
+?>

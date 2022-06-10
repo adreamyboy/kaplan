@@ -1,0 +1,605 @@
+<?php
+
+function updateContact($contact) {
+	$contact->first_name = trim($contact->first_name);
+	$contact->last_name = trim($contact->last_name);
+	$contact->name = trim($contact->first_name . ' ' . $contact->last_name);
+}
+
+function updateDiscount($discount) {
+	if ($discount->ratio_type_c == 'Amount') {
+		$discount->rate_c = $discount->discount_ratio_c;
+	} else {
+		$discount->rate_c = $discount->ratio_c . '%';
+	}
+}
+
+function updateOpportunity($opportunity) {
+	// BUG: If currency is different, the calculations will be wrong.
+	
+	// Calculate discounts
+	if ($opportunity->auto_discount_c == 1) {
+		calculateDiscounts($opportunity);
+		$opportunity->auto_discount_c = 0;
+	}
+	
+	// Update: name
+	$opportunity->name = 'IN-' . sprintf('%08d', $opportunity->reference_c);
+	
+	// Update: amount_before & discount & amount_after & cash_flow
+	$amount = 0;
+	$total_before_discounts = 0;
+	$total_discounts = 0;
+	$collection = $opportunity->get_line_items();
+	if (count($collection) > 0) {
+		foreach ($collection as $item) {
+			if (!$item->excluded_from_invoice_c) {
+				$amount += $item->total_price_net;
+				$total_before_discounts += $item->total_price;
+				$total_discounts += $item->total_discount;
+			}
+		}
+	}
+	$opportunity->amount                   = $amount;
+	$opportunity->total_before_discounts_c = $total_before_discounts;
+	$opportunity->total_discounts_c        = $total_discounts;
+	$opportunity->cash_flow_c              = $amount;
+	
+	// Update: payments & allocations & refunds & unpaid
+	$total_payments               = 0;
+	$total_installments           = 0;
+	$total_promises               = 0;
+	$total_creditnote_allocations = 0;
+	$total_refunds                = 0;
+	$collection = $opportunity->get_payments();
+	if (count($collection) > 0) {
+		foreach ($collection as $item) {
+			switch ($item->type) {
+				case 'Receipt':
+					$total_payments += $item->amount;
+					break;
+				case 'Installment':
+					$total_installments += $item->amount;
+					break;
+				case 'Promise':
+					$total_promises += $item->amount;
+					break;
+				case 'Refund':
+					$total_refunds += $item->amount;
+					break;
+				case 'Credit_Note_Allocation':
+					$total_creditnote_allocations += $item->amount;
+					break;
+			}
+		}
+	}
+	$opportunity->total_payments_c               = $total_payments;
+	$opportunity->total_installments_c           = $total_installments;
+	$opportunity->total_refunds_c                = $total_refunds;
+	$opportunity->total_creditnote_allocations_c = $total_creditnote_allocations;
+	$opportunity->total_unpaid_c = $opportunity->amount - $opportunity->total_payments_c - $opportunity->total_creditnote_allocations_c + $opportunity->total_refunds_c;
+	
+	// Update: sales_stage & probability
+	global $timedate;
+	$sales_stage_temp = $opportunity->sales_stage;
+	if (count($collection) > 0 && $opportunity->total_unpaid_c == 0 && $opportunity->amount == 0 && ($total_payments + $total_installments + $total_promises + $total_creditnote_allocations - $total_refunds == 0) && $sales_stage_temp != 'Open') {
+		$opportunity->sales_stage = 'Closed Lost';
+		$opportunity->probability = 0;
+	}
+	if ($opportunity->total_unpaid_c != 0 || $opportunity->amount > 0) {
+		$opportunity->sales_stage = 'Closed Won';
+		$opportunity->probability = 100;
+	}
+	if (count($collection) == 0 && $opportunity->sales_stage == 'Closed Won') {
+		$opportunity->sales_stage = 'Open';
+		$opportunity->probability = 50;
+	}
+	
+	// Update: date_closed
+	if ($opportunity->sales_stage == 'Closed Won') {
+		if ($opportunity->date_closed == '') {
+			$opportunity->date_closed = $timedate->to_display_date($timedate->nowDbDate());
+		}
+	} else {
+		$opportunity->date_closed = '';
+	}
+	
+	// Update: reason_of_loss
+	if ($opportunity->sales_stage != 'Closed Lost') {
+		$opportunity->reason_of_loss_c = '';
+	}
+	
+	// Update: status
+	$opportunity->status_c = 'Opportunity';
+	if ($opportunity->sales_stage == 'Closed Won') {
+		if ($opportunity->total_unpaid_c == 0) {
+			$opportunity->status_c = 'Invoice_Paid';
+		} elseif ($opportunity->total_unpaid_c < 0) {
+			$opportunity->status_c = 'Invoice_Overpaid';
+		} else {
+			$opportunity->status_c = 'Invoice_Unpaid';
+		}
+	}
+}
+
+
+function updateCreditNote($credit_note) {
+	
+	// Update 'totals' of credit notes
+	$amount = toNumber($credit_note->amount_c);
+	$amount_allocated = 0;
+	$amount_refunded = 0;
+	$collection = $credit_note->get_payments();
+	if (count($collection) > 0) {
+		foreach($collection as $item) {
+			if ($item->type == 'Credit_Note_Allocation') {
+				$amount_allocated += $item->amount;
+			} elseif ($item->type == 'Refund') {
+				$amount_refunded += $item->amount;
+			}
+		}
+	}
+	$credit_note->amount_allocated_c = $amount_allocated;
+	$credit_note->amount_refunded_c = $amount_refunded;
+	$credit_note->amount_unallocated_c = $amount - ($amount_allocated + $amount_refunded);
+	
+	// Update 'Cash Flow' of credit note.
+	$credit_note->cash_flow_c = $amount * -1;
+	
+	// Update 'Status' of credit note.
+	if ($credit_note->amount_unallocated_c == 0) {
+		$credit_note->status_c = 'Allocated';
+	} elseif ($credit_note->amount_unallocated_c < 0) {
+		$credit_note->status_c = 'Over_Allocated';
+	} else {
+		$credit_note->status_c = 'Not_Allocated';
+	}
+}
+
+
+function updateProduct($product) {
+	
+	// Update: 'Product Name'
+	$product->name = '';
+	$product_name = array();
+	if ($product->gi_products_catalog_gi_products_1_name != '') {
+		$product_name[] = $product->gi_products_catalog_gi_products_1_name;
+	}
+	if ($product->gi_terms_gi_products_1_name != '') {
+		$product_name[] = $product->gi_terms_gi_products_1_name;
+	}
+	if ($product->gi_locations_gi_products_1_name != '') {
+		$product_name[] = $product->gi_locations_gi_products_1_name;
+	}
+	if ($product->batch_c != '') {
+		$product_name[] = $product->batch_c;
+	}
+	$product->name = implode(' - ', $product_name);
+	
+	// Update: 'Product Code'
+	$product->code_c = '';
+	$product_code = array();
+	$catalog_id = $product->gi_products_catalog_gi_products_1gi_products_catalog_ida;
+	if ($catalog_id != '') {
+		$catalog = new GI_Products_Catalog();
+		$catalog->retrieve($catalog_id);
+		$product_code[] = $catalog->code_c;
+	}        
+	$term_id = $product->gi_terms_gi_products_1gi_terms_ida;
+	if ($term_id != '') {
+		$term = new GI_Terms();
+		$term->retrieve($term_id);
+		$product_code[] = $term->code;
+	}
+	$location_id = $product->gi_locations_gi_products_1gi_locations_ida;
+	if ($location_id != '') {
+		$location = new GI_Locations();
+		$location->retrieve($location_id);
+		$product_code[] = $location->code;
+	}
+	$batch = $product->batch_c;
+	if ($batch != '') {
+		$product_code[] = $batch;
+	}
+	$product->code = implode('-', $product_code);
+	
+	// Update Web Hidden
+	switch ($product->status_c) {
+		case 'Complete':
+			$product->web_hidden = 1;
+			break;
+		case 'Cancelled':
+			$product->web_hidden = 1;
+			break;
+		case 'Active':
+			break;
+	}
+	
+	// Update 'Date Start' & 'Date End' (if the service is NOT provisional)
+	if (!$product->provisional_c) {
+		global $timedate;
+		$dates = array();
+		$min = '';
+		$max = '';
+		$number_of_sessions = '';
+		$collection = $product->get_sessions();
+		if (count($collection) > 0) {
+			foreach ($collection as $item) {
+				if ( $timedate->check_matching_format($item->date_start, 'Y-m-d H:i:s') ) {
+					$dates[] = $item->date_start;
+				} else {
+					$dates[] = $timedate->to_db($item->date_start);
+				}
+			}
+		}
+		// NOTE: array 'dates' must store values as format 2014-06-23... otherwise, min & max will not work.
+		if (count($dates) > 0) {
+			$min = min($dates);
+			$max = max($dates);
+			$number_of_sessions = count($dates);
+		}
+		$product->date_start_c = $min;
+		$product->date_end_c = $max;
+		$product->number_of_sessions_c = $number_of_sessions;
+	}
+}
+
+
+function updatePayment($payment) {
+	
+	// Update: name
+	$payment->name = 'PT-' . sprintf('%08d', $payment->reference_c);
+	
+	// Update 'Type' based on the 'Date Cleared'
+	if ($payment->date_cleared != '' && in_array($payment->type, array('Installment', 'Promise'))) {
+		$payment->type = 'Receipt';
+	}
+	
+	// Update 'Mode' based on the 'Type'
+	if ($payment->type == 'Installment' || $payment->type == 'Promise') {
+		$payment->mode = 'Cheque';
+	}
+	
+	// Update 'Date Cleared' based on the 'Mode'
+	if ($payment->mode != 'Cheque') {
+		$payment->date_cleared = $payment->date_paid;
+	}
+	
+	// Update 'Cash Flow' field
+	switch ($payment->type) {
+		case 'Receipt':
+			$payment->cash_flow_c = $payment->amount * -1;
+			break;
+		case 'Installment':
+			$payment->cash_flow_c = $payment->amount * -1;
+			break;
+		case 'Promise':
+			$payment->cash_flow_c = 0;
+			break;
+		case 'Refund':
+			$payment->cash_flow_c = $payment->amount;
+			break;
+		case 'Credit_Note_Allocation':
+			$payment->cash_flow_c = 0;
+			break;
+	}
+	
+	// Update 'Verified' based on the 'Type'
+	if ($payment->type == 'Promise') {
+		$payment->verified_c = 0;
+	}
+}
+
+
+function updateLineItem($line_item) {
+
+	// Update: name
+	$line_item->name = 'LI-' . sprintf('%08d', $line_item->reference_c);
+	
+	// Auto-calculate the quantity, price, discount, and net
+	$line_item->quantity = 1;
+	$line_item->total_price = $line_item->quantity * toNumber($line_item->unit_price);
+	if ($line_item->discount_type_c == 'Amount') {
+		$line_item->total_discount = $line_item->quantity * toNumber($line_item->discount_ratio_c);
+		$line_item->discount_rate = $line_item->discount_ratio_c;
+	} else {
+		$line_item->total_discount = $line_item->total_price * (toNumber($line_item->discount_ratio_c) / 100);
+		$line_item->discount_rate = $line_item->discount_ratio_c . '%';
+	}
+	$line_item->total_price_net = $line_item->total_price - $line_item->total_discount;
+	
+	// Auto-set the Exclude from Invoice
+	if ($line_item->status_c == 'Cancelled' || 
+		$line_item->status_c == 'Interested_Warm' ||
+		$line_item->status_c == 'Interested_Hot' ||
+		$line_item->status_c == 'Not_Interested' ||
+		toNumber($line_item->unit_price) == 0)
+	{
+		$line_item->excluded_from_invoice_c = true;
+	} else {
+		$line_item->excluded_from_invoice_c = false;		
+	}
+	
+	// Auto-set 'Active' to 'Complete' when product is already complete.
+	if ($line_item->status_c == 'Active') {
+		$collection = $line_item->get_products();
+		if (count($collection) > 0) {
+			$product = current($collection);
+		}
+		if ($product->status_c == 'Complete') {
+			$line_item->status_c == 'Complete';
+		}
+	}
+	
+	// Create a new follow-up task (if user selected to)
+	if ($line_item->create_followup_task_c == 1) {
+		$collection = $line_item->get_opportunities();
+		if (count($collection) > 0) {
+		
+			global $timedate;
+			$date_due = $timedate->asDbDate($timedate->getNow()->modify("+4 days")); // 3 days later!
+			$opportunity = current($collection);
+			$contact = current($opportunity->get_contacts_list());
+			
+			$task = new Task();
+			$task->name = 'Follow-up to close';
+			$task->description = 'Follow up and close if interested.';
+			$task->parent_type = 'Opportunities';
+			$task->parent_id = $opportunity->id;
+			$task->date_due = $date_due;
+			$task->priority = 'Medium';
+			$task->assigned_user_id = $line_item->assigned_user_id;
+			$task->contact_id = $contact->id;
+			$task->save();
+		}
+		$line_item->create_followup_task_c = 0;
+	}
+}
+
+
+// Use function to convert Currency (with comma) to Number
+function toNumber($str) {
+    return preg_replace('/([^0-9\\.])/i', '', $str);
+}
+
+
+function SendBulkSMS($sms) {
+
+    //return;
+    
+    // TO-DO 01: remove duplicate mobile numbers before sending SMS.
+    // TO-DO 02: let SMSGlobal send a confirmation to "entrypoint" to confirm the message status.
+    // http://support.sugarcrm.com/02_Documentation/04_Sugar_Developer/Sugar_Developer_Guide_6.5/02_Application_Framework/Entry_Points/02_Creating_Custom_Entry_Points/
+    // http://www.smsglobal.com/docs/HTTP.pdf
+    // https://www.smsglobal.com/http-api
+    
+    
+    if ($sms->send_immediately_c == 1) {
+	    $username = 'genesis8';
+	    $password = 'F119346';
+	    
+	    /*
+	    global $timedate;
+	  	if ( $timedate->check_matching_format($sms->date_scheduled_c, 'Y-m-d H:i:s') ) {
+			$scheduledatetime = $sms->date_scheduled_c;
+		} else {
+			$scheduledatetime = $timedate->to_db($sms->date_scheduled_c);
+		}
+		*/
+	    
+	    $contacts = $sms->get_contacts();
+	    
+	    /********** APPROACH 1: 1 "Note" is stored per Contact **********/
+	    foreach ($contacts as $contact) {
+		    $content =  'action=sendsms'.
+		                '&user='.rawurlencode($username).
+		                '&password='.rawurlencode($password).
+		                '&to='.rawurlencode($contact->phone_mobile).
+		                '&from='.rawurlencode($sms->sender_id_c).
+		                '&maxsplit=3'.
+		                //'&scheduledatetime='.rawurlencode($scheduledatetime).
+		                '&text='.rawurlencode($sms->description);
+            $smsglobal_response = file_get_contents('http://www.smsglobal.com.au/http-api.php?'.$content);
+            
+		    //Sample Response
+		    //OK: 0; Sent queued message ID: 04b4a8d4a5a02176 SMSGlobalMsgID:6613115713715266 
+		    
+		    /*
+		    $explode_response = explode('SMSGlobalMsgID:', $smsglobal_response);
+		    if(count($explode_response) == 2) { // Message Success
+		        $status = 'Sent';
+		    } else { //Message Failed
+		        $status = 'Failed';
+		    }
+		    */
+		    
+		    $note = new Note();
+		    $note->name = "SMS Message";
+		    $note->parent_type = 'GI_SMS_Messages';
+		    $note->parent_id = $sms->id;
+		    $note->parent_name = $sms->name;
+		    $note->contact_id = $contact->id;
+		    $note->contact_name = $contact->name;
+		    $note->description = "SMS to {$contact->phone_mobile} - {$contact->name} \n\n{$smsglobal_response} \n\n{$sms->description}";
+			$note->save();
+	    }
+		
+	    /********** APPROACH 2: All messages are stored as 1 "Note" **********/
+	    /*
+	    $mobiles = array();
+	    
+	    foreach ($contacts as $contact) {
+	        $id = $contact->id;
+			$mobiles[$id] = $contact->phone_mobile;
+	    }
+	    $mobiles_str = implode(',', $mobiles);
+	    
+	    $content =  'action=sendsms'.
+	                '&user='.rawurlencode($username).
+	                '&password='.rawurlencode($password).
+	                '&to='.rawurlencode($mobiles_str).
+	                '&from='.rawurlencode($sms->sender_id_c).
+	                //'&scheduledatetime='.rawurlencode($scheduledatetime).
+	                '&text='.rawurlencode($sms->description);
+	    
+	    die('http://www.smsglobal.com.au/http-api.php?'.$content);
+	    $smsglobal_response = file_get_contents('http://www.smsglobal.com.au/http-api.php?'.$content);
+	    
+	    //Sample Response
+	    //OK: 0; Sent queued message ID: 04b4a8d4a5a02176 SMSGlobalMsgID:6613115713715266 
+	    
+	    $note = new Note();
+	    $note->name = "SMS";
+	    $note->parent_name = $sms->name;
+	    $note->parent_type = 'GI_SMS_Messages';
+	    $note->parent_id = $sms->id;
+	    $note->description = "{$smsglobal_response}\n\nMessage to be sent to:\n" . implode("\n", $mobiles);
+		$note->save();
+		*/
+		
+		$sms->send_immediately_c = 0;
+		$sms->save();
+	}
+}
+
+
+function calculateDiscounts($opportunity) {
+	
+	if ($opportunity->auto_discount_c == 1) {
+		
+		$contact = current($opportunity->get_contacts_list());
+		$account = new Account();
+		$account->retrieve($opportunity->account_id);
+		$line_items = $opportunity->get_line_items();
+		$products = array();
+		$catalogs = array();
+		$discounts = array();
+		$matrix = array();
+		
+		// Exclude line items whose status is set to 'Cancelled' or 'Not Interested'
+		foreach ($line_items as $line_item) {
+			if (in_array($line_item->status_c, array('Cancelled', 'Not_Interested'))) {
+				unset($line_items[$line_item->id]);
+			}
+		}
+		
+		// DISCONTINUED, VALID FROM, EXPIRES ON, TARGETS
+		foreach ($line_items as $item) {
+			$product = current($item->get_products());
+			$catalog = current($product->get_catalog());
+			
+			foreach ($product->get_discounts() as $discount) {
+				if ($discount->isDiscountApplicable($account->id, $contact->id, $product)) {
+					$products[$product->id] = $product;
+					$catalogs[$catalog->id] = $catalog;
+					$discounts[$discount->id] = $discount;
+					$matrix[] = array (
+						'product_id' => $product->id,
+						'product_name' => $product->name,
+						'product_price' => $product->price,
+						'product_date_start' => $product->date_start_c,
+						'catalog_id' => $catalog->id,
+						'discount_id' => $discount->id,
+						'discount_name' => $discount->name,
+						'is_combo' => $discount->is_combo_c,
+						'lineitem_id' => $item->id,
+						'ratio_type' => $discount->ratio_type_c,
+						'ratio' => $discount->ratio_c,
+						'rate' => $discount->rate_c,
+						//'priority' => $discount->priority_c,
+						//'mutually_exclusive' => $discount->mutually_exclusive_c,
+					);
+				}
+			}
+			foreach ($catalog->get_discounts() as $discount) {
+				if ($discount->isDiscountApplicable($account->id, $contact->id, $product)) {
+					$products[$product->id] = $product;
+					$catalogs[$catalog->id] = $catalog;
+					$discounts[$discount->id] = $discount;
+					$matrix[] = array (
+						'product_id' => $product->id,
+						'product_name' => $product->name,
+						'product_price' => $product->price,
+						'product_date_start' => $product->date_start_c,
+						'catalog_id' => $catalog->id,
+						'discount_id' => $discount->id,
+						'discount_name' => $discount->name,
+						'is_combo' => $discount->is_combo_c,
+						'lineitem_id' => $item->id,
+						'ratio_type' => $discount->ratio_type_c,
+						'ratio' => $discount->ratio_c,
+						'rate' => $discount->rate_c,
+						//'priority' => $discount->priority_c,
+						//'mutually_exclusive' => $discount->mutually_exclusive_c,
+					);
+				}
+			}
+		}
+		
+		// COMBO
+		foreach ($matrix as $key=>$m) { 
+			if ($m['is_combo'] == 1) {
+				foreach ($discounts[$m['discount_id']]->get_products() as $p) {
+					if (!array_key_exists($p->id, $products)) {
+						unset($matrix[$key]);
+					}
+				}
+				foreach ($discounts[$m['discount_id']]->get_catalogs() as $c) {
+					if (!array_key_exists($c->id, $catalogs)) {
+						unset($matrix[$key]);
+					}
+				}
+			}
+		}
+		
+		$matrix = array_unique($matrix, SORT_REGULAR);
+		
+		foreach ($line_items as $item) {
+			$db = $GLOBALS['db'];
+			
+			$item->discount_type_c = 'Percentage';
+			$item->discount_ratio_c = 0;
+			$discount_id = '';
+			
+			foreach ($matrix as $m) {
+				if ($item->id == $m['lineitem_id'] && $item->discount_ratio_c < $m['ratio']) {
+					
+					$item->discount_ratio_c = $m['ratio'];
+					$item->discount_type_c = $m['ratio_type'];
+					$discount_id = $m['discount_id'];
+					
+					updateLineItem($item); // This update does NOT really get saved via the Bean object, but rather just to re-calculate the values
+					
+					$sql = "UPDATE gi_line_items
+							SET quantity = '{$item->quantity}', 
+								total_price = '{$item->total_price}',
+								total_discount = '{$item->total_discount}',
+								discount_rate = '{$item->discount_rate}',
+								total_price_net = '{$item->total_price_net}'
+							WHERE id = '{$item->id}'
+							";
+					$result = $db->query($sql);
+					
+					$sql = "UPDATE gi_line_items_cstm
+							SET discount_type_c = '{$item->discount_type_c}', 
+								discount_ratio_c = '{$item->discount_ratio_c}',
+								status_c = '{$item->status_c}',
+								excluded_from_invoice_c = '{$item->excluded_from_invoice_c}'
+							WHERE id_c = '{$item->id}'
+							";
+					$result = $db->query($sql);
+				}
+			}
+			
+			//$item->save();
+			$link = 'gi_discounts_gi_line_items_1';
+			if ($item->load_relationship($link)) {
+				$item->$link->add($discount_id);
+			}
+			//$GLOBALS['log']->fatal($item->gi_discounts_id_c);
+		}
+		
+	}
+}
+
+?>

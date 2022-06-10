@@ -1,0 +1,127 @@
+<?php
+$popupMeta = array (
+    'moduleMain' => 'GI_Products',
+    'varName' => 'GI_Products',
+    'orderBy' => 'gi_products.name',
+    'whereClauses' => array (
+  'name' => 'gi_products.name',
+  'code' => 'gi_products.code',
+  'type' => 'gi_products.type',
+  'price' => 'gi_products.price',
+  'currency_id' => 'gi_products.currency_id',
+  'gi_products_catalog_gi_products_1_name' => 'gi_products.gi_products_catalog_gi_products_1_name',
+  'gi_terms_gi_products_1_name' => 'gi_products.gi_terms_gi_products_1_name',
+  'gi_locations_gi_products_1_name' => 'gi_products.gi_locations_gi_products_1_name',
+  'batch_c' => 'gi_products_cstm.batch_c',
+  'provisional_c' => 'gi_products_cstm.provisional_c',
+  'discontinued' => 'gi_products.discontinued',
+  'web_hidden' => 'gi_products.web_hidden',
+),
+    'searchInputs' => array (
+  1 => 'name',
+  4 => 'code',
+  5 => 'type',
+  6 => 'price',
+  7 => 'currency_id',
+  8 => 'gi_products_catalog_gi_products_1_name',
+  9 => 'gi_terms_gi_products_1_name',
+  10 => 'gi_locations_gi_products_1_name',
+  11 => 'batch_c',
+  12 => 'provisional_c',
+  13 => 'discontinued',
+  14 => 'web_hidden',
+),
+    'searchdefs' => array (
+  'name' => 
+  array (
+    'name' => 'name',
+    'width' => '10%',
+  ),
+  'code' => 
+  array (
+    'type' => 'varchar',
+    'label' => 'LBL_CODE',
+    'width' => '10%',
+    'name' => 'code',
+  ),
+  'type' => 
+  array (
+    'type' => 'enum',
+    'studio' => 'visible',
+    'label' => 'LBL_TYPE',
+    'width' => '10%',
+    'name' => 'type',
+  ),
+  'price' => 
+  array (
+    'type' => 'currency',
+    'label' => 'LBL_PRICE',
+    'currency_format' => true,
+    'width' => '10%',
+    'name' => 'price',
+  ),
+  'currency_id' => 
+  array (
+    'type' => 'currency_id',
+    'studio' => 'visible',
+    'label' => 'LBL_CURRENCY',
+    'width' => '10%',
+    'name' => 'currency_id',
+  ),
+  'gi_products_catalog_gi_products_1_name' => 
+  array (
+    'type' => 'relate',
+    'link' => true,
+    'label' => 'LBL_GI_PRODUCTS_CATALOG_GI_PRODUCTS_1_FROM_GI_PRODUCTS_CATALOG_TITLE',
+    'id' => 'GI_PRODUCTS_CATALOG_GI_PRODUCTS_1GI_PRODUCTS_CATALOG_IDA',
+    'width' => '10%',
+    'name' => 'gi_products_catalog_gi_products_1_name',
+  ),
+  'gi_terms_gi_products_1_name' => 
+  array (
+    'type' => 'relate',
+    'link' => true,
+    'label' => 'LBL_GI_TERMS_GI_PRODUCTS_1_FROM_GI_TERMS_TITLE',
+    'id' => 'GI_TERMS_GI_PRODUCTS_1GI_TERMS_IDA',
+    'width' => '10%',
+    'name' => 'gi_terms_gi_products_1_name',
+  ),
+  'gi_locations_gi_products_1_name' => 
+  array (
+    'type' => 'relate',
+    'link' => true,
+    'label' => 'LBL_GI_LOCATIONS_GI_PRODUCTS_1_FROM_GI_LOCATIONS_TITLE',
+    'id' => 'GI_LOCATIONS_GI_PRODUCTS_1GI_LOCATIONS_IDA',
+    'width' => '10%',
+    'name' => 'gi_locations_gi_products_1_name',
+  ),
+  'batch_c' => 
+  array (
+    'type' => 'varchar',
+    'label' => 'LBL_BATCH',
+    'width' => '10%',
+    'name' => 'batch_c',
+  ),
+  'provisional_c' => 
+  array (
+    'type' => 'bool',
+    'label' => 'LBL_PROVISIONAL',
+    'width' => '10%',
+    'name' => 'provisional_c',
+  ),
+  'discontinued' => 
+  array (
+    'type' => 'bool',
+    'label' => 'LBL_DISCONTINUED',
+    'width' => '10%',
+    'name' => 'discontinued',
+  ),
+  'web_hidden' => 
+  array (
+    'type' => 'bool',
+    'label' => 'LBL_WEB_HIDDEN',
+    'width' => '10%',
+    'name' => 'web_hidden',
+  ),
+),
+);

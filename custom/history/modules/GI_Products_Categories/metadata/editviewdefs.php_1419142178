@@ -1,0 +1,92 @@
+<?php
+
+require_once("include/SugarTinyMCE.php");
+$tiny = new SugarTinyMCE();
+$tiny->defaultConfig['cleanup_on_startup']=true;
+$tinyHtml = $tiny->getInstance('description,short_description_c');
+
+$module_name = 'GI_Products_Categories';
+$viewdefs [$module_name] = 
+array (
+  'EditView' => 
+  array (
+    'templateMeta' => 
+    array (
+      'maxColumns' => '2',
+      'widths' => 
+      array (
+        0 => 
+        array (
+          'label' => '10',
+          'field' => '30',
+        ),
+        1 => 
+        array (
+          'label' => '10',
+          'field' => '30',
+        ),
+      ),
+      'useTabs' => false,
+      'tabDefs' => 
+      array (
+        'DEFAULT' => 
+        array (
+          'newTab' => false,
+          'panelDefault' => 'expanded',
+        ),
+      ),
+    ),
+    'panels' => 
+    array (
+      'default' => 
+      array (
+        0 => 
+        array (
+          0 => 'name',
+          1 => 
+          array (
+            'name' => 'parent_category_c',
+            'studio' => 'visible',
+            'label' => 'LBL_PARENT_CATEGORY',
+            'displayParams' => 
+            array (
+              'initial_filter' => '&discontinued_c_advanced=0',
+            ),
+          ),
+        ),
+        1 => 
+        array (
+          0 => 
+          array (
+            'name' => 'web_hidden_c',
+            'label' => 'LBL_WEB_HIDDEN',
+          ),
+          1 => 
+          array (
+            'name' => 'discontinued_c',
+            'label' => 'LBL_DISCONTINUED',
+          ),
+        ),
+        2 => 
+        array (
+          0 => 
+          array (
+            'name' => 'short_description_c',
+            'label' => 'LBL_SHORT_DESCRIPTION',
+            'customCode' => '<textarea id="short_description_c" name="short_description_c">{$fields.short_description_c.value}</textarea>{literal}'. $tinyHtml . '{/literal}',
+          ),
+        ),
+        3 => 
+        array (
+          0 => 
+          array (
+            'name' => 'description',
+            'label' => 'LBL_DESCRIPTION',
+            'customCode' => '<textarea id="description" name="description">{$fields.description.value}</textarea>',
+          ),
+        ),
+      ),
+    ),
+  ),
+);
+?>

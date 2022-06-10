@@ -1,0 +1,4 @@
+<?php
+//auto-generated file DO NOT EDIT
+$layout_defs['GI_Products_Categories']['subpanel_setup']['gi_products_catalog_gi_products_categories_1']['override_subpanel_name'] = 'GI_Products_Categories_subpanel_gi_products_catalog_gi_products_categories_1';
+?>

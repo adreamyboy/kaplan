@@ -1,0 +1,202 @@
+<?php
+$module_name = 'GI_Line_Items';
+$viewdefs [$module_name] = 
+array (
+  'DetailView' => 
+  array (
+    'templateMeta' => 
+    array (
+      'form' => 
+      array (
+        'buttons' => 
+        array (
+          0 => 'EDIT',
+          1 => 'DUPLICATE',
+          2 => 'DELETE',
+          3 => 'FIND_DUPLICATES',
+          /*
+          4 => 
+          array (
+            'customCode' => '<input class="button" onclick="window.open(\'index.php?module={$module}&record={$id}&action=SynchMoodle\');" type="submit" value="Synch to e-Learning Portal">',
+          ),
+          5 => 
+          array (
+            'customCode' => '<input class="button" onclick="window.open(\'index.php?module={$module}&record={$id}&action=SendLogins\');" type="submit" value="Send e-Learning Logins">',
+          ),
+          */
+        ),
+      ),
+      'maxColumns' => '2',
+      'widths' => 
+      array (
+        0 => 
+        array (
+          'label' => '10',
+          'field' => '30',
+        ),
+        1 => 
+        array (
+          'label' => '10',
+          'field' => '30',
+        ),
+      ),
+      'useTabs' => false,
+      'tabDefs' => 
+      array (
+        'DEFAULT' => 
+        array (
+          'newTab' => false,
+          'panelDefault' => 'expanded',
+        ),
+        'LBL_DETAILVIEW_PANEL1' => 
+        array (
+          'newTab' => false,
+          'panelDefault' => 'expanded',
+        ),
+      ),
+      'syncDetailEditViews' => true,
+    ),
+    'panels' => 
+    array (
+      'default' => 
+      array (
+        0 => 
+        array (
+          0 => 'name',
+          1 => 
+          array (
+            'name' => 'status_c',
+            'studio' => 'visible',
+            'label' => 'LBL_STATUS',
+          ),
+        ),
+        1 => 
+        array (
+          0 => 
+          array (
+            'name' => 'gi_products_gi_line_items_1_name',
+            'label' => 'LBL_GI_PRODUCTS_GI_LINE_ITEMS_1_FROM_GI_PRODUCTS_TITLE',
+          ),
+          1 => 
+          array (
+            'name' => 'provisional_c',
+            'label' => 'LBL_PROVISIONAL',
+          ),
+        ),
+        2 => 
+        array (
+          0 => 
+          array (
+            'name' => 'quantity',
+            'label' => 'LBL_QUANTITY',
+          ),
+          1 => 
+          array (
+            'name' => 'exam_result_c',
+            'studio' => 'visible',
+            'label' => 'LBL_EXAM_RESULT',
+          ),
+        ),
+        3 => 
+        array (
+          0 => 
+          array (
+            'name' => 'unit_price',
+            'label' => 'LBL_UNIT_PRICE',
+          ),
+          1 => 
+          array (
+            'name' => 'opportunities_gi_line_items_1_name',
+            'label' => 'LBL_OPPORTUNITIES_GI_LINE_ITEMS_1_FROM_OPPORTUNITIES_TITLE',
+          ),
+        ),
+        4 => 
+        array (
+          0 => 
+          array (
+            'name' => 'currency_id',
+            'studio' => 'visible',
+            'label' => 'LBL_CURRENCY',
+          ),
+          1 => 
+          array (
+            'name' => 'contacts_gi_line_items_1_name',
+            'label' => 'LBL_CONTACTS_GI_LINE_ITEMS_1_FROM_CONTACTS_TITLE',
+          ),
+        ),
+        5 => 
+        array (
+          0 => 
+          array (
+            'name' => 'discount_type_c',
+            'studio' => 'visible',
+            'label' => 'LBL_DISCOUNT_TYPE',
+          ),
+          1 => 
+          array (
+            'name' => 'total_price',
+            'label' => 'LBL_TOTAL_PRICE',
+          ),
+        ),
+        6 => 
+        array (
+          0 => 
+          array (
+            'name' => 'discount_ratio_c',
+            'label' => 'LBL_DISCOUNT_RATIO',
+          ),
+          1 => 
+          array (
+            'name' => 'total_discount',
+            'label' => 'LBL_TOTAL_DISCOUNT',
+          ),
+        ),
+        7 => 
+        array (
+          0 => 
+          array (
+            'name' => 'discount_rate',
+            'label' => 'LBL_DISCOUNT_RATE',
+          ),
+          1 => 
+          array (
+            'name' => 'total_price_net',
+            'label' => 'LBL_TOTAL_PRICE_NET',
+          ),
+        ),
+        8 => 
+        array (
+          0 => 'description',
+          1 => 
+          array (
+            'name' => 'excluded_from_invoice_c',
+            'label' => 'LBL_EXCLUDED_FROM_INVOICE',
+          ),
+        ),
+        9 => 
+        array (
+          0 => 
+          array (
+            'name' => 'gi_discounts_gi_line_items_1_name',
+          ),
+        ),
+      ),
+      'lbl_detailview_panel1' => 
+      array (
+        0 => 
+        array (
+          0 => 'date_entered',
+          1 => 'date_modified',
+        ),
+        1 => 
+        array (
+        ),
+        2 => 
+        array (
+          0 => 'assigned_user_name',
+        ),
+      ),
+    ),
+  ),
+);
+?>

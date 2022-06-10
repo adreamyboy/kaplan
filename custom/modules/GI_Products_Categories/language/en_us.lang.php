@@ -1,0 +1,25 @@
+<?php
+// created: 2017-04-13 10:43:03
+$mod_strings = array (
+  'LBL_DISCONTINUED' => 'Discontinued',
+  'LNK_NEW_RECORD' => 'Create Products Categories',
+  'LNK_LIST' => 'View Products Categories',
+  'LNK_IMPORT_GI_PRODUCTS_CATEGORIES' => 'Import Products Categories',
+  'LBL_LIST_FORM_TITLE' => 'Product Category List',
+  'LBL_SEARCH_FORM_TITLE' => 'Search Product Category',
+  'LBL_GI_PRODUCTS_CATEGORIES_GI_PRODUCTS_CATEGORIES_1_FROM_GI_PRODUCTS_CATEGORIES_L_TITLE' => 'Product Category',
+  'LBL_GI_PRODUCTS_CATEGORIES_GI_PRODUCTS_CATALOG_1_FROM_GI_PRODUCTS_CATALOG_TITLE' => 'Products Catalog',
+  'LBL_GI_PRODUCTS_CATEGORIES_GI_PRODUCTS_CATEGORIES_1_FROM_GI_PRODUCTS_CATEGORIES_R_TITLE' => 'Product Category',
+  'LBL_HOMEPAGE_TITLE' => 'My Product Category',
+  'LBL_PARENT_CATEGORY_GI_PRODUCTS_CATEGORIES_ID' => 'Parent Category (related Product Category ID)',
+  'LBL_PARENT_CATEGORY' => 'Parent Category',
+  'LBL_GI_PRODUCTS_CATALOG_GI_PRODUCTS_CATEGORIES_1_FROM_GI_PRODUCTS_CATALOG_TITLE' => 'Products Catalog',
+  'LBL_WEB_HIDDEN' => 'Web Hidden',
+  'LBL_SEQUENCE' => 'Sequence',
+  'LBL_SHORT_DESCRIPTION' => 'Short Description',
+  'LBL_NAME_WITH_CATEGORY' => 'Name With Category',
+  'LBL_NAME_IN_WEBSITE' => 'Name in Website',
+  'LBL_FEATURES' => 'Features',
+  'LBL_IMAGE_URL' => 'Image URL',
+  'LBL_H1_HEADING' => 'H1 Heading',
+);

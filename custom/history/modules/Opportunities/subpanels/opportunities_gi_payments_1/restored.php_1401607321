@@ -1,0 +1,58 @@
+<?php
+// created: 2014-06-01 09:21:56
+$layout_defs = array (
+  'type' => 
+  array (
+    'type' => 'enum',
+    'default' => true,
+    'studio' => 'visible',
+    'vname' => 'LBL_TYPE',
+    'width' => '10%',
+  ),
+  'mode' => 
+  array (
+    'type' => 'enum',
+    'default' => true,
+    'studio' => 'visible',
+    'vname' => 'LBL_MODE',
+    'width' => '10%',
+  ),
+  'amount' => 
+  array (
+    'type' => 'currency',
+    'default' => true,
+    'vname' => 'LBL_AMOUNT',
+    'currency_format' => true,
+    'width' => '10%',
+  ),
+  'cash_flow_c' => 
+  array (
+    'type' => 'currency',
+    'default' => true,
+    'vname' => 'LBL_CASH_FLOW',
+    'currency_format' => true,
+    'width' => '10%',
+  ),
+  'date_paid' => 
+  array (
+    'type' => 'date',
+    'vname' => 'LBL_DATE_PAID',
+    'width' => '10%',
+    'default' => true,
+  ),
+  'date_cleared' => 
+  array (
+    'type' => 'date',
+    'vname' => 'LBL_DATE_CLEARED',
+    'width' => '10%',
+    'default' => true,
+  ),
+  'edit_button' => 
+  array (
+    'vname' => 'LBL_EDIT_BUTTON',
+    'widget_class' => 'SubPanelEditButton',
+    'module' => 'GI_Payments',
+    'width' => '4%',
+    'default' => true,
+  ),
+);

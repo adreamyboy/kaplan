@@ -1,0 +1,383 @@
+<?php
+
+function updateContact($contact) {
+	$contact->first_name = trim($contact->first_name);
+	$contact->last_name = trim($contact->last_name);
+	$contact->name = trim($contact->first_name . ' ' . $contact->last_name);
+}
+
+
+function updateOpportunity($opportunity) {
+	// BUG: If currency is different, the calculations will be wrong.
+	
+	// Update: name
+	$opportunity->name = 'IN-' . sprintf('%08d', $opportunity->reference_c);
+	
+	// Update: amount_before & discount & amount_after
+	$amount = 0;
+	$total_before_discounts = 0;
+	$total_discounts = 0;
+	$collection = $opportunity->get_line_items();
+	if (count($collection) > 0) {
+		foreach ($collection as $item) {
+			if (!$item->excluded_from_invoice_c) {
+				$amount += $item->total_price_net;
+				$total_before_discounts += $item->total_price;
+				$total_discounts += $item->total_discount;
+			}
+		}
+	}
+	$opportunity->amount                   = $amount;
+	$opportunity->total_before_discounts_c = $total_before_discounts;
+	$opportunity->total_discounts_c        = $total_discounts;
+	
+	// Update: payments & allocations & refunds & unpaid
+	$total_payments               = 0;
+	$total_installments           = 0;
+	$total_creditnote_allocations = 0;
+	$total_refunds                = 0;
+	$collection = $opportunity->get_payments();
+	if (count($collection) > 0) {
+		foreach ($collection as $item) {
+			switch ($item->type) {
+				case "Receipt":
+					$total_payments += $item->amount;
+					break;
+				case "Installment":
+					$total_installments += $item->amount;
+					break;
+				case "Refund":
+					$total_refunds += $item->amount;
+					break;
+				case "Credit_Note_Allocation":
+					$total_creditnote_allocations += $item->amount;
+					break;
+			}
+		}
+	}
+	$opportunity->total_payments_c               = $total_payments;
+	$opportunity->total_installments_c           = $total_installments;
+	$opportunity->total_creditnote_allocations_c = $total_creditnote_allocations;
+	$opportunity->total_refunds_c                = $total_refunds;
+	$opportunity->total_unpaid_c = $opportunity->amount - $opportunity->total_payments_c - $opportunity->total_creditnote_allocations_c + $opportunity->total_refunds_c;
+	
+	// Update: sales_stage & probability & date_closed
+	global $timedate;
+	if (count($collection) > 0) {
+		$opportunity->sales_stage = 'Closed Won';
+		$opportunity->probability = 100;
+		if ($opportunity->date_closed == '') {
+			$opportunity->date_closed = $timedate->to_display_date($timedate->nowDbDate());
+		}
+	} else {
+		if ($opportunity->sales_stage == 'Closed Won') {
+			$opportunity->sales_stage = 'Hot';
+			$opportunity->probability = 70;
+		}
+		$opportunity->date_closed = '';
+	}
+	if ($opportunity->sales_stage != 'Closed Lost') {
+		$opportunity->reason_of_loss_c = '';
+	}
+	
+	// Update: status
+	$opportunity->status_c = 'Opportunity';
+	if ($opportunity->date_closed != '') {
+		if ($opportunity->total_unpaid_c == 0) {
+			$opportunity->status_c = 'Invoice_Paid';
+		} elseif ($opportunity->total_unpaid_c < 0) {
+			$opportunity->status_c = 'Invoice_Overpaid';
+		} else {
+			$opportunity->status_c = 'Invoice_Unpaid';
+		}
+	}
+}
+
+
+function updateCreditNote($credit_note) {
+	
+	// Update "totals" of credit notes
+	$amount = toNumber($credit_note->amount_c);
+	$amount_allocated = 0;
+	$amount_refunded = 0;
+	$collection = $credit_note->get_payments();
+	if (count($collection) > 0) {
+		foreach($collection as $item) {
+			if ($item->type == 'Credit_Note_Allocation') {
+				$amount_allocated += $item->amount;
+			} elseif ($item->type == 'Refund') {
+				$amount_refunded += $item->amount;
+			}
+		}
+	}
+	$credit_note->amount_allocated_c = $amount_allocated;
+	$credit_note->amount_refunded_c = $amount_refunded;
+	$credit_note->amount_unallocated_c = $amount - ($amount_allocated + $amount_refunded);
+	
+	// Update "Status" of credit note.
+	if ($credit_note->amount_unallocated_c == 0) {
+		$credit_note->status_c = 'Allocated';
+	} elseif ($credit_note->amount_unallocated_c < 0) {
+		$credit_note->status_c = 'Over_Allocated';
+	} else {
+		$credit_note->status_c = 'Not_Allocated';
+	}
+}
+
+
+function updateProduct($product) {
+	
+	// Update: "Product Name"
+	$product->name = "";
+	$product_name = array();
+	if ($product->gi_products_catalog_gi_products_1_name != "") {
+		$product_name[] = $product->gi_products_catalog_gi_products_1_name;
+	}
+	if ($product->gi_terms_gi_products_1_name != "") {
+		$product_name[] = $product->gi_terms_gi_products_1_name;
+	}
+	if ($product->gi_locations_gi_products_1_name != "") {
+		$product_name[] = $product->gi_locations_gi_products_1_name;
+	}
+	if ($product->batch_c != "") {
+		$product_name[] = $product->batch_c;
+	}
+	$product->name = implode(" - ", $product_name);
+	
+	// Update: "Product Code"
+	$product->code_c = "";
+	$product_code = array();
+	$catalog_id = $product->gi_products_catalog_gi_products_1gi_products_catalog_ida;
+	if ($catalog_id != "") {
+		$catalog = new GI_Products_Catalog();
+		$catalog->retrieve($catalog_id);
+		$product_code[] = $catalog->code_c;
+	}        
+	$term_id = $product->gi_terms_gi_products_1gi_terms_ida;
+	if ($term_id != "") {
+		$term = new GI_Terms();
+		$term->retrieve($term_id);
+		$product_code[] = $term->code;
+	}
+	$location_id = $product->gi_locations_gi_products_1gi_locations_ida;
+	if ($location_id != "") {
+		$location = new GI_Locations();
+		$location->retrieve($location_id);
+		$product_code[] = $location->code;
+	}
+	$batch = $product->batch_c;
+	if ($batch != "") {
+		$product_code[] = $batch;
+	}
+	$product->code = implode("-", $product_code);
+	
+	// Update Web Hidden
+	switch ($product->status_c) {
+		case 'Complete':
+			$product->web_hidden = 1;
+			break;
+		case 'Cancelled':
+			$product->web_hidden = 1;
+			break;
+		case 'Active':
+			break;
+	}
+	
+	/*
+	// Update #of lines items in product
+	$number_of_complete = 0;
+	$number_of_active = 0;
+	$number_of_stopped = 0;
+	$number_of_cancelled = 0;
+	$number_of_interested = 0;
+	$collection = $product->get_line_items();
+	if (count($collection) > 0) {
+		foreach ($collection as $item) {
+			switch ($item->status_c) {
+				case 'Complete':
+					$number_of_complete += 1;
+					break;
+				case 'Active':
+					$number_of_active += 1;
+					break;
+				case 'Stopped':
+					$number_of_stopped += 1;
+					break;
+				case 'Cancelled':
+					$number_of_cancelled += 1;
+					break;
+				case 'Interested':
+					$number_of_interested += 1;
+					break;
+			}
+		}
+	}
+	$product->number_of_complete_c = $number_of_complete;
+	$product->number_of_active_c = $number_of_active;
+	$product->number_of_stopped_c = $number_of_stopped;
+	$product->number_of_cancelled_c = $number_of_cancelled;
+	$product->number_of_interested_c = $number_of_interested;
+	*/
+	
+	// Update 'Date Start' & 'Date End' (if the service is NOT provisional)
+	if (!$product->provisional_c) {
+		global $timedate;
+		$dates = array();
+		$min = '';
+		$max = '';
+		$number_of_sessions = '';
+		$collection = $product->get_sessions();
+		if (count($collection) > 0) {
+			foreach ($collection as $item) {
+				if ( $timedate->check_matching_format($item->date_start, 'Y-m-d H:i:s') ) {
+					$dates[] = $item->date_start;
+				} else {
+					$dates[] = $timedate->to_db($item->date_start);
+				}
+			}
+		}
+		// NOTE: array 'dates' must store values as format 2014-06-23... otherwise, min & max will not work.
+		if (count($dates) > 0) {
+			$min = min($dates);
+			$max = max($dates);
+			$number_of_sessions = count($dates);
+		}
+		$product->date_start_c = $min;
+		$product->date_end_c = $max;
+		$product->number_of_sessions_c = $number_of_sessions;
+	}
+}
+
+
+function updatePayment($payment) {
+	
+	// Update: name
+	$payment->name = 'PT-' . sprintf('%08d', $payment->reference_c);
+	
+	// Update 'Type' based on the 'Date Cleared'
+	if ($payment->date_cleared != '' && in_array($payment->type, array('Installment', 'Promise'))) {
+		$payment->type = 'Receipt';
+	}
+	
+	// Update 'Mode' based on the 'Type'
+	if ($payment->type == 'Installment' || $payment->type == 'Promise') {
+		$payment->mode = 'Cheque';
+	}
+	
+	// Update 'Date Cleared' based on the 'Mode'
+	if ($payment->mode != 'Cheque') {
+		$payment->date_cleared = $payment->date_paid;
+	}
+	
+	// Update "Cash Flow" field
+	switch ($payment->type) {
+		case "Receipt":
+			$payment->cash_flow_c = $payment->amount;
+			break;
+		case "Installment":
+			$payment->cash_flow_c = 0;
+			break;
+		case "Promise":
+			$payment->cash_flow_c = 0;
+			break;
+		case "Refund":
+			$payment->cash_flow_c = $payment->amount * -1;
+			break;
+		case "Credit_Note_Allocation":
+			$payment->cash_flow_c = 0;
+			break;
+	}
+	
+	// Update 'Verified' based on the 'Type'
+	if ($payment->type == 'Promise') {
+		$payment->verified_c = 0;
+	}
+}
+
+
+function updateLineItem($line_item) {
+
+	// Update: name
+	$line_item->name = 'LI-' . sprintf('%08d', $line_item->reference_c);
+	
+	// Auto-calculate the quantity, price, discount, and net
+	$line_item->quantity = 1;
+	$line_item->total_price = $line_item->quantity * toNumber($line_item->unit_price);
+	if ($line_item->discount_type_c == "Amount") {
+		$line_item->total_discount = $line_item->quantity * toNumber($line_item->discount_ratio_c);
+		$line_item->discount_rate = $line_item->discount_ratio_c;
+	} else {
+		$line_item->total_discount = $line_item->total_price * (toNumber($line_item->discount_ratio_c) / 100);
+		$line_item->discount_rate = $line_item->discount_ratio_c . "%";
+	}
+	$line_item->total_price_net = $line_item->total_price - $line_item->total_discount;
+	
+	// Auto-set the Exclude from Invoice
+	if ($line_item->status_c == 'Cancelled' || 
+		$line_item->status_c == 'Interested' ||
+		toNumber($line_item->unit_price) == 0)
+	{
+		$line_item->excluded_from_invoice_c = true;
+	} else {
+		$line_item->excluded_from_invoice_c = false;		
+	}
+	
+	// Auto-set 'Active' to 'Complete' when product is already complete.
+	if ($line_item->status_c == 'Active') {
+		$collection = $line_item->get_products();
+		if (count($collection) > 0) {
+			$product = current($collection);
+		}
+		if ($product->status_c == 'Complete') {
+			$line_item->status_c == 'Complete';
+		}
+	}
+}
+
+
+function syncLineItemsStatus($opportunity) {
+	$collection = $opportunity->get_line_items();
+	if (count($collection) > 0) {
+		foreach ($collection as $item) {
+			if ($opportunity->status_c == 'Opportunity') {
+				if ($item->status_c == 'Active' || $item->status_c == 'Complete') {
+					$item->status_c = 'Interested';
+					$item->save();
+				}
+			} else {
+				if ($item->status_c == 'Interested') {
+					$item->status_c = 'Active';
+					$item->save();
+				}
+			}
+		}
+	}
+}
+
+
+function syncLineItemsStatus1($product) {
+	$collection = $product->get_line_items();
+	if (count($collection) > 0) {
+		foreach ($collection as $item) {
+			if ($opportunity->status_c == 'Complete') {
+				if ($item->status_c == 'Active' || $item->status_c == 'Complete') {
+					$item->status_c = 'Interested';
+					$item->save();
+				}
+			} else {
+				if ($item->status_c == 'Interested') {
+					$item->status_c = 'Active';
+					$item->save();
+				}
+			}
+		}
+	}
+}
+
+
+// Use function to convert Currency (with comma) to Number
+function toNumber($str) {
+    return preg_replace("/([^0-9\\.])/i", "", $str);
+}
+
+?>

@@ -1,0 +1,208 @@
+<?php
+ob_end_clean();
+
+if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
+
+require_once('include/Sugarpdf/Sugarpdf.php');
+//require_once('modules/Opportunities/sendEmail.php');
+
+class GI_ProductsSugarpdfschedule extends Sugarpdf
+{
+    /**
+     * Override
+     */
+    function process(){
+        //$this->preDisplay();
+        $this->display();
+        $this->buildFileName();
+        //$this->sendAsEmail();
+    }
+
+    /**
+     * Custom header
+     */
+    public function Header()
+    {
+        $logo = 'custom/themes/default/images/company_logo.png';
+        $bg = '#f2eee9';
+        $product_id = $_REQUEST['record'];
+        $product = new GI_Products();
+        $product->retrieve($product_id);
+        
+        $html = <<<PDF
+<table border="0">
+    <tr>
+        <td valign="top">
+            <img width="200" src={$logo}></img>
+        </td>
+        <td valign="top">
+            <ul>
+                <li>Code: {$product->code}</li>
+                <li>Name: {$product->name}</li>
+            </ul>
+        </td>
+    </tr>
+</table>
+<h2>Schedule</h2>
+<table border="1" cellspacing="0" cellpadding="3">
+	<tbody>
+		<tr style="background-color: {$bg}">
+			<td width="30"><b>No.</b></td>
+			<td width="130"><b>Date</b></td>
+			<td width="50"><b>Time</b></td>
+			<td width="50"><b>Duration (hours)</b></td>
+			<!--<td width="90"><b>Instructor</b></td>-->
+			<td width="300"><b>Session</b></td>
+			<td width="170"><b>Location</b></td>
+		</tr>
+	</tbody>
+</table>
+PDF;
+
+        $this->SetY(10);
+        $this->SetFont(PDF_FONT_NAME_MAIN, 'B', 10);
+        
+        $this->writeHTML($html, true, false, false, false, '');
+    }
+
+    /**
+     * Custom footer
+     */
+    public function Footer()
+    {
+        $pages = '<p>Page ' . $this->getAliasNumPage() . ' of ' . $this->getAliasNbPages() . '                       (Schedules are tentative and subject to change)</p>';
+        //$signature = '<p style="text-align: center;">THIS IS A COMPUTER-GENERATED DOCUMENT AND IT DOES NOT REQUIRE A SIGNATURE.<br />THIS DOCUMENT SHALL NOT BE INVALIDATED SOLELY ON THE GROUND THAT IT IS NOT SIGNED.</p>';
+        //$address = '<p style="text-align: center;">Genesis Institute, Office F19, 1st Floor, Block 08, Knowledge Village, Dubai, 501715, United Arab Emirates<br />Tel: +971 4 438 0267, Fax: +971 4 438 0268, Email: <a href="mailto:info@genesisreview.com">info@genesisreview.com</a></p>';
+        
+        $this->SetFont(PDF_FONT_NAME_MAIN, '', 9);
+        $this->SetY(-20);
+        //$this->writeHTML($signature, true, false, false, false, '');
+        $this->drawLine();
+        //$this->writeHTML($address, true, false, false, false, '');
+        $this->writeHTML($pages, true, false, false, false, '');
+    }
+
+    /**
+     * Predisplay content
+     */
+    function preDisplay()
+    {
+        //Adds a predisplay page
+        $this->AddPage();
+        $this->SetFont(PDF_FONT_NAME_MAIN,'',PDF_FONT_SIZE_MAIN);
+        $this->Ln();
+        $this->MultiCell(0,0,'Predisplay Content',0,'C');
+    }
+
+    /**
+     * Main content
+     */
+    function display()
+    {
+        //add a display page
+        $this->setPageOrientation('L', true, 25);
+        $this->AddPage();
+        $this->SetFont(PDF_FONT_NAME_MAIN,'',9);//PDF_FONT_SIZE_MAIN);
+        $this->SetY(63);
+        $this->SetMargins(PDF_MARGIN_LEFT, 63, PDF_MARGIN_RIGHT, 25);
+        
+        $bg = '#f2eee9';
+        $product_id = $_REQUEST['record'];
+        $product = new GI_Products();
+        $product->retrieve($product_id);
+        
+        // Show 'Sessions' list
+        
+        $html = <<<PDF
+<table border="1" cellspacing="0" cellpadding="3">
+	<tbody>
+PDF;
+        $i = 0;
+        $collection = $product->get_sessions();
+        /*
+		echo '<pre>';
+		print_r($collection);
+		echo '</pre>';
+		die();
+		*/
+		
+		usort($collection, array("GI_ProductsSugarpdfschedule", "sort_collection_by_meeting_date"));
+		
+        foreach ($collection as $item) {
+            $duration = $item->duration_hours + ($item->duration_minutes / 60);
+            $i++;
+            
+            $item_date_start_date = date("l, d M Y", strtotime($item->date_start));
+            $item_date_start_time = date("H:i", strtotime($item->date_start));
+            
+$html .= <<<PDF
+        <tr>
+            <td valign="top" width="30">
+                <p>{$i}</p>
+            </td>
+            <td valign="top" width="130">
+                <p style="text-align: right;">{$item_date_start_date}</p>
+            </td>
+            <td valign="top" width="50">
+                <p>{$item_date_start_time}</p>
+            </td>
+            <td valign="top" width="50">
+                <p>{$duration}</p>
+            </td>
+            <!--
+            <td valign="top" width="90">
+                <p>{$item->assigned_user_name}</p>
+            </td>
+            -->
+            <td valign="top" width="300">
+                <p>{$item->name}</p>
+            </td>
+            <td valign="top" width="170">
+                <p>{$item->location}</p>
+            </td>
+        </tr>
+PDF;
+        }
+
+$html .= <<<PDF
+    </tbody>
+</table>
+PDF;
+        
+        $this->writeHTML($html, true, false, false, false, '');
+    }
+
+    /**
+     * This method draw an horizontal line with a specific style.
+     */
+    protected function drawLine()
+    {
+        $this->SetLineStyle(array('width' => 0.85 / $this->getScaleFactor(), 'cap' => 'butt', 'join' => 'miter', 'dash' => 0, 'color' => array(220, 220, 220)));
+        $this->MultiCell(0, 0, '', 'T', 0, 'C');
+    }
+    
+    /**
+     * Build filename
+     */
+    function buildFileName()
+    {
+       $product_id = $_REQUEST['record'];
+       $product = new GI_Products();
+       $product->retrieve($product_id);
+       //$this->fileName = 'schedule-' . $product->code . '-' date('Y-m-d') . '.pdf';
+       $this->fileName = 'schedule-' . $product->code . '.pdf';
+    }
+
+    protected function sendAsEmail()
+    {
+        $this->Output($this->fileName, 'I');
+        return true;
+    }
+    
+    static function sort_collection_by_meeting_date($a, $b) {
+        $name_a = $a->date_start;
+        $name_b = $b->date_start;
+        //return strcmp($name_a, $name_b);
+		return (strtotime($name_a) < strtotime($name_b)) ? -1 : 1;
+    }
+}

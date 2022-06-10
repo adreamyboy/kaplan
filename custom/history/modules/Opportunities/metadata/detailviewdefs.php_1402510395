@@ -1,0 +1,230 @@
+<?php
+$viewdefs ['Opportunities'] = 
+array (
+  'DetailView' => 
+  array (
+    'templateMeta' => 
+    array (
+      'form' => 
+      array (
+        'buttons' => 
+        array (
+          0 => 'EDIT',
+          1 => 'DUPLICATE',
+          2 => 'DELETE',
+          3 => 'FIND_DUPLICATES',
+          4 => 
+          array (
+            'customCode' => '<input class="button" onclick="window.open(\'index.php?module={$module}&record={$id}&action=sugarpdf&sugarpdf=quote\');" type="submit" value="Download Quote PDF">',
+          ),
+          5 => 
+          array (
+            'customCode' => '<input class="button" onclick="window.open(\'index.php?module={$module}&record={$id}&action=sugarpdf&sugarpdf=quote\');" type="submit" value="Download Order PDF">',
+          ),
+          6 => 
+          array (
+            'customCode' => '<input class="button" onclick="window.open(\'index.php?module={$module}&record={$id}&action=sugarpdf&sugarpdf=quote\');" type="submit" value="Download Invoice PDF">',
+          ),
+        ),
+      ),
+      'maxColumns' => '2',
+      'widths' => 
+      array (
+        0 => 
+        array (
+          'label' => '10',
+          'field' => '30',
+        ),
+        1 => 
+        array (
+          'label' => '10',
+          'field' => '30',
+        ),
+      ),
+      'useTabs' => false,
+      'tabDefs' => 
+      array (
+        'DEFAULT' => 
+        array (
+          'newTab' => false,
+          'panelDefault' => 'expanded',
+        ),
+        'LBL_EDITVIEW_PANEL1' => 
+        array (
+          'newTab' => false,
+          'panelDefault' => 'expanded',
+        ),
+        'LBL_PANEL_ASSIGNMENT' => 
+        array (
+          'newTab' => false,
+          'panelDefault' => 'expanded',
+        ),
+      ),
+      'syncDetailEditViews' => true,
+    ),
+    'panels' => 
+    array (
+      'default' => 
+      array (
+        0 => 
+        array (
+          0 => 'account_name',
+        ),
+        1 => 
+        array (
+          0 => 'name',
+          1 => 
+          array (
+            'name' => 'reference_c',
+            'label' => 'LBL_REFERENCE',
+          ),
+        ),
+        2 => 
+        array (
+          0 => 'sales_stage',
+          1 => 'date_closed',
+        ),
+        3 => 
+        array (
+          0 => 'probability',
+          1 => 'campaign_name',
+        ),
+        4 => 
+        array (
+          0 => 
+          array (
+            'name' => 'amount',
+            'label' => '{$MOD.LBL_AMOUNT} ({$CURRENCY})',
+          ),
+          1 => 'opportunity_type',
+        ),
+        5 => 
+        array (
+          0 => 
+          array (
+            'name' => 'currency_id',
+            'comment' => 'Currency used for display purposes',
+            'label' => 'LBL_CURRENCY',
+          ),
+          1 => 'lead_source',
+        ),
+        6 => 
+        array (
+          0 => 
+          array (
+            'name' => 'total_before_discounts_c',
+            'label' => 'LBL_TOTAL_BEFORE_DISCOUNTS',
+          ),
+        ),
+        7 => 
+        array (
+          0 => 
+          array (
+            'name' => 'total_discounts_c',
+            'label' => 'LBL_TOTAL_DISCOUNTS',
+          ),
+          1 => 'next_step',
+        ),
+        8 => 
+        array (
+          0 => 
+          array (
+            'name' => 'description',
+            'nl2br' => true,
+          ),
+        ),
+      ),
+      'lbl_editview_panel1' => 
+      array (
+        0 => 
+        array (
+          0 => 
+          array (
+            'name' => 'status_c',
+            'studio' => 'visible',
+            'label' => 'LBL_STATUS',
+          ),
+          1 => 
+          array (
+            'name' => 'date_invoiced_c',
+            'label' => 'LBL_DATE_INVOICED',
+          ),
+        ),
+        1 => 
+        array (
+          0 => 
+          array (
+            'name' => 'total_payments_c',
+            'label' => 'LBL_TOTAL_PAYMENTS',
+          ),
+          1 => 
+          array (
+            'name' => 'date_ordered_c',
+            'label' => 'LBL_DATE_ORDERED',
+          ),
+        ),
+        2 => 
+        array (
+          0 => 
+          array (
+            'name' => 'total_creditnote_allocations_c',
+            'label' => 'LBL_TOTAL_CREDITNOTE_ALLOCATIONS',
+          ),
+        ),
+        3 => 
+        array (
+          0 => 
+          array (
+            'name' => 'total_refunds_c',
+            'label' => 'LBL_TOTAL_REFUNDS',
+          ),
+        ),
+        4 => 
+        array (
+          0 => 
+          array (
+            'name' => 'total_unpaid_c',
+            'label' => 'LBL_TOTAL_UNPAID',
+          ),
+          1 => 
+          array (
+            'name' => 'invoice_comments_c',
+            'studio' => 'visible',
+            'label' => 'LBL_INVOICE_COMMENTS',
+          ),
+        ),
+      ),
+      'LBL_PANEL_ASSIGNMENT' => 
+      array (
+        0 => 
+        array (
+          0 => 
+          array (
+            'name' => 'date_entered',
+            'customCode' => '{$fields.date_entered.value} {$APP.LBL_BY} {$fields.created_by_name.value}',
+          ),
+          1 => 
+          array (
+            'name' => 'date_modified',
+            'label' => 'LBL_DATE_MODIFIED',
+            'customCode' => '{$fields.date_modified.value} {$APP.LBL_BY} {$fields.modified_by_name.value}',
+          ),
+        ),
+        1 => 
+        array (
+          0 => 
+          array (
+            'name' => 'date_sync_with_quickbooks_c',
+            'label' => 'LBL_DATE_SYNC_WITH_QUICKBOOKS',
+          ),
+          1 => 
+          array (
+            'name' => 'assigned_user_name',
+            'label' => 'LBL_ASSIGNED_TO',
+          ),
+        ),
+      ),
+    ),
+  ),
+);
+?>

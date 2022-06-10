@@ -1,0 +1,80 @@
+<?php
+if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
+
+require_once('custom/modules/gi_functions_custom.php');
+
+class logic_hooks_Emails {
+
+    function before_save_method($bean, $event, $arguments) {
+        //$GLOBALS['log']->fatal('Email name: ' . $bean->name);
+    }
+    
+    function after_save_method($bean, $event, $arguments) {
+        
+        // Handle Laimoon.com leads
+        $GLOBALS['log']->fatal('Laimoon - Email ID: ' . $bean->id);
+        
+        if ($bean->from_addr == 'help@laimoon.com' && 
+            (strpos($bean->name, 'New Callback Inquiry from Laimoon') === 0 || 
+             strpos($bean->name, 'New Corporate Callback Inquiry') === 0 || 
+             strpos($bean->name, 'You have a new brochure download') === 0)
+            ) {
+			
+			//$GLOBALS['log']->fatal("Email Description Plain: " . htmlspecialchars_decode($bean->description_html));
+			
+			$html = htmlspecialchars_decode($bean->description_html);
+			
+			$pattern_name = "/<td>Name<\/td>\s*<td>:<\/td>\s*<td>(.*?)<\/td>/";
+			$pattern_phone = "/<td>Phone <\/td>\s*<td>:<\/td>\s*<td>(.*?)<\/td>/";
+			//$pattern_email = "/<td>Email<\/td>\s*<td>:<\/td>\s*<td><a href='(.*?)'>(.*?)<\/a><\/td>/";
+			$pattern_email = "/<td>Email<\/td>\s*<td>:<\/td>\s*<td>(.*?)<\/td>/";
+			$pattern_message = "/<td width=\"561\" bgcolor=\"#b6d570\">(.*?)<\/td>/";
+			
+			preg_match_all($pattern_name, $html, $match_name);
+			preg_match_all($pattern_phone, $html, $match_phone);
+			preg_match_all($pattern_email, $html, $match_email);
+			preg_match_all($pattern_message, $html, $match_message);
+			
+			$name = trim($match_name[1][0]);
+			$phone = trim($match_phone[1][0]);
+			//$email = $match_email[2][0];
+			$email = trim($match_email[1][0]);
+			$message = trim($match_message[1][0]);
+			
+			$html = $GLOBALS['log']->fatal("Laimoon - Email Name: " . $name);
+			$html = $GLOBALS['log']->fatal("Laimoon - Email Phone: " . $phone);
+			$html = $GLOBALS['log']->fatal("Laimoon - Email Email: " . $email);
+			$html = $GLOBALS['log']->fatal("Laimoon - Email Message: " . $message);
+			
+			$description = "{$bean->name}\n\n{$message}";
+			$name_array = explode(' ', $name);
+			
+			$first_name = $name_array[0];
+			array_shift($name_array);
+			if (count($name_array) > 0) {
+				$last_name = trim(implode(' ', $name_array));
+			} else {
+				$last_name = $first_name;
+			}
+			
+            $lead = new Lead();
+            $lead->first_name = $first_name;
+            $lead->last_name = $last_name;
+            $lead->phone_mobile = $phone;
+            $lead->email1 = $email;
+            $lead->description = $description;
+            $lead->status = 'New';
+            $lead->lead_source = 'Web_to_Lead';
+            //$lead->assigned_user_id = 'd9ede1d5-996e-310d-05bc-54571b4a4826'; // = Nikki (user)
+            $lead->assigned_user_id = '53a77649-1254-10b1-f46c-53e9c1579b22'; // = Web User (user)
+            $lead->campaign_id = '5'; // = Laimoon (campaign)
+            $lead->save();
+            
+            $bean->load_relationship('leads');
+            $bean->leads->add($lead->id);
+            $GLOBALS['log']->fatal('Laimoon - Lead ID: ' . $lead->id);
+        }
+    }
+
+}
+?>

@@ -1,0 +1,203 @@
+<?php
+if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
+
+require_once('include/Sugarpdf/Sugarpdf.php');
+//require_once('modules/Opportunities/sendEmail.php');
+
+class GI_PaymentsSugarpdfpayment extends Sugarpdf
+{
+    /**
+     * Override
+     */
+    function process(){
+        //$this->preDisplay();
+        $this->display();
+        $this->buildFileName();
+        $this->sendAsEmail();
+    }
+
+    /**
+     * Custom header
+     */
+    public function Header()
+    {
+        $logo = 'custom/themes/default/images/company_logo.png';
+        $bg = 'orange';
+        $payment_id = $_REQUEST['record'];
+        $payment = new GI_Payments();
+        $payment->retrieve($payment_id);
+        //$transaction_date = date("d M Y");
+        $transaction_date = date("d M Y", strtotime($payment->date_paid));
+        $opportunity = current($payment->get_opportunities());
+        
+        $html = <<<PDF
+<table border="0">
+	<tr>
+		<td valign="top">
+			<img width="200" src={$logo}></img>
+		</td>
+		<td valign="top">
+			<ul>
+				<li>{$payment->type} Date: {$transaction_date}</li>
+				<li>{$payment->type} No: {$payment->name}</li>
+				<li>Account: {$opportunity->account_name}</li>
+			</ul>
+		</td>
+	</tr>
+</table>
+PDF;
+
+        $this->SetY(10);
+        $this->SetFont(PDF_FONT_NAME_MAIN, 'B', 10);
+		$this->writeHTML($html, true, false, false, false, '');
+    }
+
+    /**
+     * Custom footer
+     */
+    public function Footer()
+    {
+        $pages = '<p>Page ' . $this->getAliasNumPage() . ' of ' . $this->getAliasNbPages() . '</p>';
+        $signature = '<p style="text-align: center;">THIS IS A COMPUTER-GENERATED DOCUMENT AND IT DOES NOT REQUIRE A SIGNATURE.<br />THIS DOCUMENT SHALL NOT BE INVALIDATED SOLELY ON THE GROUND THAT IT IS NOT SIGNED.</p>';
+		$address = '<p style="text-align: center;">Genesis Institute, Office 2401, Vision Tower, Business Bay, Dubai, 501715, United Arab Emirates<br />Tel: +971 4 554 6184, Fax: +971 4 554 6194, Email: <a href="mailto:info@genesisreview.com">info@genesisreview.com</a></p>';
+		
+        $this->SetFont(PDF_FONT_NAME_MAIN, '', 9);
+        $this->SetY(-40);
+		$this->writeHTML($signature, true, false, false, false, '');
+        $this->drawLine();
+		$this->writeHTML($address, true, false, false, false, '');
+		$this->writeHTML($pages, true, false, false, false, '');
+    }
+
+    /**
+     * Predisplay content
+     */
+    function preDisplay()
+    {
+        //Adds a predisplay page
+        $this->AddPage();
+        $this->SetFont(PDF_FONT_NAME_MAIN,'',PDF_FONT_SIZE_MAIN);
+        $this->Ln();
+        $this->MultiCell(0,0,'Predisplay Content',0,'C');
+    }
+
+    /**
+     * Main content
+     */
+    function display()
+    {
+		ob_start();
+		
+        //add a display page
+        $this->AddPage();
+        $this->setPageOrientation('P', true, 45);
+        $this->SetFont(PDF_FONT_NAME_MAIN,'',9);//PDF_FONT_SIZE_MAIN);
+        $this->SetY(50);
+        $this->SetMargins(PDF_MARGIN_LEFT, 50, PDF_MARGIN_RIGHT, 100);
+        
+        $bg = 'orange';
+        $payment_id = $_REQUEST['record'];
+        $payment = new GI_Payments();
+        $payment->retrieve($payment_id);
+        
+        $due_date = date("d M Y", strtotime($payment->date_paid));
+        
+        $opportunity = current($payment->get_opportunities());
+        
+        
+        // Prepare 'Reference' status
+        if ($payment->reference_no_c != '') {
+            $reference = ", reference {$payment->reference_no_c}";
+        } else {
+            $reference = "";
+        }
+        
+        $payment_amount = number_format($payment->amount, 2, ".", ",");
+        $opportunity_total_unpaid = number_format($opportunity->total_unpaid_c, 2, ".", ",");
+        
+        // Prepare 'Invoice' status
+        if ($opportunity->total_unpaid_c <= 0) {
+            $invoice = "<p>Invoice is fully paid.</p>";
+        } elseif ($opportunity->total_unpaid_c > 0) {
+            if ($payment->comments == '') {
+                $invoice = "<p>As of the date of this transaction, there is an outstanding amount of {$opportunity_total_unpaid} still to be paid on this invoice.</p>";
+            } else {
+                $invoice = "";
+            }
+        }
+        
+        // Show 'Payment' details
+        $html = <<<PDF
+<h2>{$payment->type}</h2>
+<p>All amounts in {$opportunity->currency_name}</p>
+<table border="1" cellspacing="0" cellpadding="3">
+	<tbody>
+		<tr style="background-color: {$bg}">
+			<td width="400"><b>Description</b></td>
+			<td width="140"><b>Amount</b></td>
+		</tr>
+		<tr>
+			<td valign="top" width="400">
+				<p>{$payment->type} against {$opportunity->name}, due on {$due_date}.</p>
+				<p>Paid by {$payment->mode}{$reference}.</p>
+				{$invoice}
+				<p>{$payment->comments}</p>
+			</td>
+			<td align="right" valign="top" width="140">
+				<p>{$payment_amount}</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+PDF;
+
+		ob_end_clean();
+		
+		$this->writeHTML($html, true, false, false, false, '');
+    }
+
+    /**
+     * This method draw an horizontal line with a specific style.
+     */
+    protected function drawLine()
+    {
+        $this->SetLineStyle(array('width' => 0.85 / $this->getScaleFactor(), 'cap' => 'butt', 'join' => 'miter', 'dash' => 0, 'color' => array(220, 220, 220)));
+        $this->MultiCell(0, 0, '', 'T', 0, 'C');
+    }
+    
+    /**
+     * Build filename
+     */
+    function buildFileName()
+    {
+        $this->fileName = 'transaction-' . date('Y-m-d') . '.pdf';
+    }
+
+    protected function sendAsEmail()
+    {
+        $this->Output($this->fileName, 'I');
+        return true;
+        
+		/*
+		$id = $_REQUEST['record'];
+		$file_name = "Invoice_{$id}.pdf";
+		$this->fileName = $file_name;
+		//ob_clean();
+		//try
+		//{
+			//if ($task == 'pdf') {
+			//	$pdf->Output($file_name, "D");
+			//} else {
+				global $sugar_config;
+				$fp = fopen($sugar_config['upload_dir'].'attachfile.pdf','wb');
+				fclose($fp);
+				$this->Output($sugar_config['upload_dir'].'attachfile.pdf','F');
+				sendEmail::send_email('2861','Opportunities', '', $file_name, true);
+			//}
+		//} catch(Exception $e) {
+		//	echo $e;
+		//}
+		*/
+	}
+	
+}
